@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block title %}Trámite generado{% endblock %}
+{% block content %}
+<div class="card success-card"><span class="eyebrow">Trámite generado</span><h1>{{ tramite.numero }}</h1><p>Conservá este número para realizar el seguimiento.</p><a class="btn primary" href="{% url 'tramite_consultar' %}">Consultar trámite</a></div>
+{% endblock %}

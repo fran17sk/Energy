@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block title %}Consultar trámite{% endblock %}
+{% block content %}
+<div class="page-head"><span class="eyebrow">Seguimiento</span><h1>Consultar trámite</h1></div>
+<form method="post" class="card form-grid">{% csrf_token %}{{ form.as_p }}<div class="full"><button class="btn primary">Consultar</button></div></form>
+{% if resultado %}<section class="card result"><span class="eyebrow">Estado actual</span><h2>{{ resultado.numero }}</h2><p><strong>Organismo:</strong> {{ resultado.organismo_actual|default:'Sin asignar' }}</p><p><strong>Etapa:</strong> {{ resultado.etapa_actual|default:'Sin asignar' }}</p><p><strong>Estado:</strong> {{ resultado.get_estado_actual_display|default:resultado.estado_actual }}</p><p><strong>Última actualización:</strong> {{ resultado.actualizado_en|date:'d/m/Y H:i' }}</p></section>{% endif %}
+{% endblock %}

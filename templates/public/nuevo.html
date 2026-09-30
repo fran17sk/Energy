@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Nuevo trámite{% endblock %}
+{% block content %}
+<div class="page-head"><span class="eyebrow">Nuevo trámite</span><h1>Registrar solicitud de seguimiento</h1><p>Completá los datos básicos y adjuntá la solicitud presentada ante EDESA.</p></div>
+<form method="post" enctype="multipart/form-data" class="card form-grid">{% csrf_token %}{{ form.as_p }}<div class="full"><button class="btn primary" type="submit">Generar número de trámite</button></div></form>
+{% endblock %}

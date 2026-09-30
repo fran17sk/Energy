@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}{{ tramite.numero }}{% endblock %}
+{% block content %}
+<div class="page-head"><span class="eyebrow">Detalle de trámite</span><h1>{{ tramite.numero }}</h1></div>
+<div class="detail-grid"><section class="card"><h2>Identificación</h2><p><strong>NIS:</strong> {{ tramite.nis }}</p><p><strong>Titular:</strong> {{ tramite.titular_nombre }}</p><p><strong>DNI/CUIT:</strong> {{ tramite.titular_dni_cuit }}</p><p><strong>Departamento:</strong> {{ tramite.departamento|default:'-' }}</p><p><strong>Potencia:</strong> {{ tramite.potencia_inyectada_kw|default:'-' }} kW</p></section><section class="card"><h2>Situación actual</h2><p><strong>Organismo:</strong> {{ tramite.organismo_actual|default:'-' }}</p><p><strong>Etapa:</strong> {{ tramite.etapa_actual|default:'-' }}</p><p><strong>Estado:</strong> {{ tramite.estado_actual }}</p><p><strong>Actualizado:</strong> {{ tramite.actualizado_en|date:'d/m/Y H:i' }}</p></section></div>
+{% endblock %}

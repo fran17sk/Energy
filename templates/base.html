@@ -1,0 +1,34 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b2440">
+  <title>{% block title %}Seguimiento GGER{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% block shell %}
+<header class="topbar public-topbar">
+  <a href="" class="brand brand-link">
+    <span class="brand-mark">G</span>
+    <span><strong>Seguimiento GGER</strong><small>Generación Distribuida · Salta</small></span>
+  </a>
+  <div class="top-actions">
+    {% if user.is_authenticated %}
+      <a href="{% url 'institucional_dashboard' %}" class="top-link">Panel institucional</a>
+      <a href="{% url 'logout' %}" class="top-link muted-link">Salir</a>
+    {% else %}
+      <a href="{% url 'login' %}" class="top-link muted-link">Acceso institucional</a>
+    {% endif %}
+  </div>
+</header>
+<main>{% block content %}{% endblock %}</main>
+<footer class="public-footer"><div><strong>Seguimiento GGER</strong><span>Sistema de trazabilidad de trámites de Generación Distribuida</span></div><span>Secretaría de Minería y Energía de Salta</span></footer>
+{% endblock %}
+</body>
+</html>
