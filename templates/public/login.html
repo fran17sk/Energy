@@ -1,5 +1,41 @@
 {% extends 'base.html' %}
-{% block title %}Acceso institucional{% endblock %}
+{% load static %}
+{% block title %}Acceso institucional · GGER{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/login.css' %}">{% endblock %}
 {% block content %}
-<div class="card narrow"><span class="eyebrow">Acceso institucional</span><h1>Ingresar</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn primary">Ingresar</button></form></div>
+<div class="login-shell">
+  <a class="login-back" href="{% url 'inicio' %}">← Volver al inicio</a>
+  <div class="login-layout">
+    <section class="login-intro" aria-labelledby="login-intro-title">
+      <span class="login-institution"><span aria-hidden="true">◈</span> Gestión institucional</span>
+      <h1 id="login-intro-title">Cada actuación,<br> un paso adelante.</h1>
+      <p>Un espacio de trabajo para acompañar el recorrido de los trámites de Generación Distribuida.</p>
+      <div class="login-journey" aria-hidden="true">
+        <div class="login-journey-heading"><span>SEGUIMIENTO GGER</span><span class="login-journey-dot"></span></div>
+        <div class="login-journey-row"><span class="login-node complete">✓</span><div><strong>Información centralizada</strong><small>Los datos del trámite, en un solo lugar.</small></div></div>
+        <div class="login-journey-row"><span class="login-node active">◎</span><div><strong>Seguimiento por etapas</strong><small>Un recorrido compartido entre organismos.</small></div></div>
+        <div class="login-journey-row"><span class="login-node">→</span><div><strong>Trazabilidad de actuaciones</strong><small>El historial de cada solicitud.</small></div></div>
+      </div>
+      <div class="login-intro-footer">Generación Distribuida <span aria-hidden="true">·</span> Provincia de Salta</div>
+    </section>
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="login-lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></div>
+      <span class="eyebrow">Acceso institucional</span>
+      <h2 id="login-title">Bienvenido a GGER</h2>
+      <p class="login-description">Ingresá con tu cuenta para acceder al panel de tu organismo.</p>
+      {% if form.errors %}<div class="login-error" role="alert"><strong>No pudimos iniciar sesión.</strong>{% for error in form.non_field_errors %}<p>{{ error }}</p>{% empty %}<p>Revisá los campos indicados e intentá nuevamente.</p>{% endfor %}</div>{% endif %}
+      <form method="post" class="login-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <div class="login-field"><label for="{{ form.username.id_for_label }}">Usuario</label>{{ form.username }}<div id="username-errors">{% for error in form.username.errors %}<p class="login-field-error">{{ error }}</p>{% endfor %}</div></div>
+        <div class="login-field"><label for="{{ form.password.id_for_label }}">Contraseña</label><div class="login-password">{{ form.password }}<button type="button" class="login-toggle" aria-controls="{{ form.password.id_for_label }}" aria-pressed="false" hidden>Mostrar</button></div><div id="password-errors">{% for error in form.password.errors %}<p class="login-field-error">{{ error }}</p>{% endfor %}</div></div>
+        <button class="btn primary login-submit" type="submit">Ingresar al panel <span aria-hidden="true">→</span></button>
+      </form>
+      <div class="login-support"><strong>¿Necesitás ayuda para ingresar?</strong><p>Si no tenés una cuenta o no recordás tu contraseña, contactá al administrador de tu organismo.</p></div>
+      <div class="login-public-link"><span>¿Querés consultar tu trámite?</span><a href="{% url 'tramite_consultar' %}">Ir a la consulta pública <span aria-hidden="true">→</span></a></div>
+    </section>
+  </div>
+  <p class="login-access-note">Acceso exclusivo para usuarios institucionales autorizados.</p>
+</div>
 {% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/login.js' %}" defer></script>{% endblock %}
