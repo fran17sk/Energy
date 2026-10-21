@@ -47,3 +47,30 @@ class ConsultaTramiteTests(TestCase):
         response = self.client.post('/tramites/consultar/', self.datos)
         self.assertContains(response, 'Pendiente de asignación')
         self.assertTrue(all(p['estado'] == 'pending' for p in response.context['seguimiento']))
+
+
+class AltaTramiteTests(TestCase):
+    def test_registro_con_adjunto_muestra_numero_y_guarda_archivo(self):
+        import tempfile
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        with tempfile.TemporaryDirectory() as media, self.settings(MEDIA_ROOT=media):
+            response = self.client.post('/tramites/nuevo/', {
+                'nis': '456', 'titular_nombre': 'María Pérez',
+                'titular_dni_cuit': '30123456', 'titular_email': 'maria@example.com',
+                'solicitud_factibilidad': SimpleUploadedFile('solicitud.pdf', b'%PDF-1.4\nprueba', content_type='application/pdf'),
+            })
+            self.assertEqual(response.status_code, 200)
+            tramite = Tramite.objects.get(nis='456')
+            self.assertContains(response, tramite.numero)
+            self.assertContains(response, '¡Tu trámite ya tiene número!')
+            self.assertTrue(tramite.solicitud_factibilidad.storage.exists(tramite.solicitud_factibilidad.name))
+
+    def test_datos_invalidos_se_conservan_y_no_crean_tramite(self):
+        response = self.client.post('/tramites/nuevo/', {
+            'nis': '456', 'titular_nombre': 'María Pérez',
+            'titular_dni_cuit': '30123456', 'titular_email': 'correo-invalido',
+        })
+        self.assertEqual(Tramite.objects.count(), 0)
+        self.assertContains(response, 'Revisá los datos antes de continuar.')
+        self.assertContains(response, 'aria-invalid="true"')
+        self.assertContains(response, 'value="María Pérez"')

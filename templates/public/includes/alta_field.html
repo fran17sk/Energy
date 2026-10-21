@@ -1,0 +1,6 @@
+<div class="alta-field{% if wide %} alta-field-wide{% endif %}">
+  <label for="{{ field.id_for_label }}">{{ field.label }} {% if field.field.required %}<span class="alta-required" aria-label="obligatorio">*</span>{% else %}<span class="alta-optional">Opcional</span>{% endif %}</label>
+  {{ field }}
+  <small id="{{ field.id_for_label }}_help">{{ field.help_text }}</small>
+  <div id="{{ field.id_for_label }}_errors">{% for error in field.errors %}<p class="alta-field-error">{{ error }}</p>{% endfor %}</div>
+</div>

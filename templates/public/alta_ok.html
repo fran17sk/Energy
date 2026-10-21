@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
-{% block title %}Trámite generado{% endblock %}
+{% load static %}
+{% block title %}Trámite registrado · GGER{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/alta.css' %}">{% endblock %}
 {% block content %}
-<div class="card success-card"><span class="eyebrow">Trámite generado</span><h1>{{ tramite.numero }}</h1><p>Conservá este número para realizar el seguimiento.</p><a class="btn primary" href="{% url 'tramite_consultar' %}">Consultar trámite</a></div>
+<div class="alta-shell"><section class="alta-success" aria-labelledby="alta-success-title"><span class="alta-success-icon" aria-hidden="true">✓</span><span class="eyebrow">Solicitud registrada</span><h1 id="alta-success-title">¡Tu trámite ya tiene número!</h1><p>La solicitud se registró correctamente. Conservá este número para consultar su estado y seguir cada etapa.</p><div class="alta-number"><small>Número de trámite</small><strong>{{ tramite.numero }}</strong></div><p>Para el seguimiento también vas a necesitar el NIS y el DNI / CUIT del titular que ingresaste en el formulario.</p><a class="btn primary" href="{% url 'tramite_consultar' %}">Consultar estado <span aria-hidden="true">→</span></a><a class="alta-back" href="{% url 'inicio' %}">Volver al inicio</a></section></div>
 {% endblock %}

@@ -1,6 +1,42 @@
 {% extends 'base.html' %}
-{% block title %}Nuevo trámite{% endblock %}
+{% load static %}
+{% block title %}Iniciar trámite · GGER{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/alta.css' %}">{% endblock %}
 {% block content %}
-<div class="page-head"><span class="eyebrow">Nuevo trámite</span><h1>Registrar solicitud de seguimiento</h1><p>Completá los datos básicos y adjuntá la solicitud presentada ante EDESA.</p></div>
-<form method="post" enctype="multipart/form-data" class="card form-grid">{% csrf_token %}{{ form.as_p }}<div class="full"><button class="btn primary" type="submit">Generar número de trámite</button></div></form>
+<div class="alta-shell">
+  <a class="alta-back" href="{% url 'inicio' %}">← Volver al inicio</a>
+  <header class="alta-heading"><span class="eyebrow">Generación Distribuida · Salta</span><h1>El primer paso de tu trámite.</h1><p>Registrá tu solicitud y obtené un número único para seguir su recorrido, desde el ingreso hasta la conexión a la red.</p></header>
+  <div class="alta-layout">
+    <aside class="alta-aside" aria-label="Guía para iniciar el trámite">
+      <div class="alta-guide"><span class="eyebrow">Antes de empezar</span><h2>Tené a mano</h2><ul><li><span aria-hidden="true">✓</span> Tu factura de energía, con el NIS del suministro.</li><li><span aria-hidden="true">✓</span> Los datos y el documento del titular.</li><li><span aria-hidden="true">✓</span> La información técnica de tu proyecto.</li><li><span aria-hidden="true">✓</span> La solicitud presentada ante EDESA, si ya la tenés.</li></ul><div class="alta-guide-note">Al finalizar, guardá el número generado. Lo vas a necesitar para consultar el estado de tu solicitud.</div></div>
+      <a class="alta-existing" href="{% url 'tramite_consultar' %}"><strong>¿Ya registraste tu trámite?</strong><span>Consultá su estado <span aria-hidden="true">→</span></span></a>
+    </aside>
+    <form method="post" enctype="multipart/form-data" class="alta-form">
+      {% csrf_token %}
+      <div class="alta-form-intro"><span>Solicitud de seguimiento</span><small>Los campos con <span class="alta-required">*</span> son obligatorios.</small></div>
+      {% if form.errors %}<div class="alta-error-summary" role="alert" tabindex="-1"><strong>Revisá los datos antes de continuar.</strong><ul>{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% if form.solicitud_factibilidad.value %}<p>Por seguridad, volvé a seleccionar el archivo adjunto.</p>{% endif %}</div>{% endif %}
+      <fieldset class="alta-section"><legend><span class="alta-section-number">01</span> Datos del suministro</legend><p>Identificá el servicio donde se realizará la conexión.</p><div class="alta-fields">
+        {% include 'public/includes/alta_field.html' with field=form.nis %}
+        {% include 'public/includes/alta_field.html' with field=form.catastro %}
+        {% include 'public/includes/alta_field.html' with field=form.departamento %}
+        {% include 'public/includes/alta_field.html' with field=form.potencia_contratada_kw %}
+      </div></fieldset>
+      <fieldset class="alta-section"><legend><span class="alta-section-number">02</span> Datos del titular</legend><p>Ingresá la información de la persona o entidad responsable.</p><div class="alta-fields">
+        {% include 'public/includes/alta_field.html' with field=form.titular_nombre wide=True %}
+        {% include 'public/includes/alta_field.html' with field=form.titular_dni_cuit %}
+        {% include 'public/includes/alta_field.html' with field=form.titular_telefono %}
+        {% include 'public/includes/alta_field.html' with field=form.titular_email wide=True %}
+      </div></fieldset>
+      <fieldset class="alta-section"><legend><span class="alta-section-number">03</span> Información del proyecto</legend><p>Completá los datos técnicos que tengas disponibles.</p><div class="alta-fields">
+        {% include 'public/includes/alta_field.html' with field=form.tecnologia %}
+        {% include 'public/includes/alta_field.html' with field=form.tipo_conexion %}
+        {% include 'public/includes/alta_field.html' with field=form.modalidad_conexion %}
+        {% include 'public/includes/alta_field.html' with field=form.potencia_inyectada_kw %}
+        {% include 'public/includes/alta_field.html' with field=form.coordenadas_pilar wide=True %}
+      </div></fieldset>
+      <fieldset class="alta-section"><legend><span class="alta-section-number">04</span> Documentación</legend><p>Incorporá el respaldo de tu solicitud de factibilidad.</p><div class="alta-upload"><span class="alta-upload-icon" aria-hidden="true">↑</span>{% include 'public/includes/alta_field.html' with field=form.solicitud_factibilidad %}</div></fieldset>
+      <div class="alta-submit"><p>Verificá que los datos sean correctos antes de registrar tu solicitud.</p><button class="btn primary" type="submit">Registrar trámite <span aria-hidden="true">→</span></button></div>
+    </form>
+  </div>
+</div>
 {% endblock %}
