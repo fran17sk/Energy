@@ -1,7 +1,63 @@
 {% extends 'base.html' %}
-{% block title %}Consultar trámite{% endblock %}
+{% load static %}
+{% block title %}Consultar estado del trámite · GGER{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/consulta.css' %}">{% endblock %}
 {% block content %}
-<div class="page-head"><span class="eyebrow">Seguimiento</span><h1>Consultar trámite</h1></div>
-<form method="post" class="card form-grid">{% csrf_token %}{{ form.as_p }}<div class="full"><button class="btn primary">Consultar</button></div></form>
-{% if resultado %}<section class="card result"><span class="eyebrow">Estado actual</span><h2>{{ resultado.numero }}</h2><p><strong>Organismo:</strong> {{ resultado.organismo_actual|default:'Sin asignar' }}</p><p><strong>Etapa:</strong> {{ resultado.etapa_actual|default:'Sin asignar' }}</p><p><strong>Estado:</strong> {{ resultado.get_estado_actual_display|default:resultado.estado_actual }}</p><p><strong>Última actualización:</strong> {{ resultado.actualizado_en|date:'d/m/Y H:i' }}</p></section>{% endif %}
+<div class="consulta-shell">
+  <a class="consulta-back" href="{% url 'inicio' %}">← Volver al inicio</a>
+  <header class="consulta-heading">
+    <span class="eyebrow">Seguimiento en línea</span>
+    <h1>Tu trámite, paso a paso.</h1>
+    <p>Consultá el estado de tu solicitud de Generación Distribuida y conocé en qué etapa se encuentra.</p>
+  </header>
+  <section class="consulta-card" aria-labelledby="consulta-title">
+    <div class="consulta-section-heading"><span class="consulta-icon" aria-hidden="true">⌕</span><div><h2 id="consulta-title">Consultar mi trámite</h2><p>Completá los tres datos para acceder al seguimiento.</p></div></div>
+    <form method="post" class="consulta-form">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="consulta-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.name == 'numero' %}<small>Ejemplo: GGER-2026-000001</small>{% elif field.name == 'nis' %}<small>Encontralo en tu factura de energía.</small>{% else %}<small>Ingresá el documento del titular.</small>{% endif %}
+        {% for error in field.errors %}<span class="consulta-error">{{ error }}</span>{% endfor %}
+      </div>
+      {% endfor %}
+      <div class="consulta-form-footer"><span>Los datos deben coincidir con los de la solicitud.</span><button class="btn primary" type="submit">Consultar estado <span aria-hidden="true">→</span></button></div>
+    </form>
+  </section>
+  {% if no_encontrado %}
+  <div id="consulta-no-encontrado" class="consulta-notice" role="alert"><strong>No encontramos tu trámite.</strong> Revisá el número de trámite, el NIS y el DNI / CUIT e intentá nuevamente.</div>
+  {% endif %}
+  {% if resultado %}
+  <section class="consulta-card consulta-result" aria-labelledby="resultado-title">
+    <header class="consulta-result-heading"><div><span class="eyebrow">Resultado de tu consulta</span><h2 id="resultado-title">{{ resultado.numero }}</h2></div><span class="consulta-status">{{ resultado.estado_actual|lower|capfirst }}</span></header>
+    <div class="consulta-summary">
+      <div><span>Etapa actual</span><strong>{{ resultado.etapa_actual.nombre|default:'Pendiente de asignación' }}</strong></div>
+      <div><span>Organismo responsable</span><strong>{{ resultado.organismo_actual.sigla|default:'Sin asignar' }}</strong></div>
+      <div><span>Última actualización</span><strong>{{ resultado.actualizado_en|date:'d/m/Y' }} <small>· {{ resultado.actualizado_en|date:'H:i' }}</small></strong></div>
+    </div>
+    <div class="consulta-tracking-heading"><h3>Seguimiento de tu trámite</h3><div class="consulta-legend"><span><i class="done"></i>Completada</span><span><i class="current"></i>Actual</span><span><i></i>Pendiente</span></div></div>
+    <p class="consulta-tracking-help" id="tracking-help">Recorré las etapas para ver el circuito completo. Las etapas completadas reflejan el historial registrado.</p>
+    {% if seguimiento %}
+    <div class="consulta-timeline-viewport" tabindex="0" role="region" aria-label="Etapas del trámite" aria-describedby="tracking-help">
+      <ol class="consulta-timeline">
+        {% for paso in seguimiento %}
+        <li class="consulta-step {{ paso.estado }}" {% if paso.estado == 'current' %}aria-current="step"{% endif %}>
+          <span class="consulta-step-node" aria-hidden="true">{% if paso.estado == 'done' %}✓{% else %}{{ forloop.counter }}{% endif %}</span>
+          <div><strong>{{ paso.etapa.organismo.sigla|default:'Solicitante' }}</strong><span class="consulta-step-name">{{ paso.etapa.nombre }}</span><small>{% if paso.estado == 'current' %}Etapa actual{% elif paso.estado == 'done' %}Completada{% else %}Pendiente{% endif %}</small></div>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+    {% else %}<p class="consulta-notice">El circuito de etapas todavía no fue configurado.</p>{% endif %}
+    <footer class="consulta-result-footer"><span aria-hidden="true">ⓘ</span> El seguimiento se actualiza con cada actuación registrada por los organismos.</footer>
+  </section>
+  {% else %}
+  <div class="consulta-guidance"><span aria-hidden="true">◎</span><h2>La información que necesitás, en un solo lugar.</h2><p>Al consultar vas a ver la etapa actual, el organismo responsable y el recorrido de tu solicitud.</p></div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'vendor/sweetalert2/sweetalert2.all.min.js' %}" defer></script>
+<script src="{% static 'js/consulta.js' %}" defer></script>
 {% endblock %}

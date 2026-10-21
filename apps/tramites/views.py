@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from .forms import TramitePublicoForm, ConsultaTramiteForm
 from .models import Tramite
+from apps.workflow.models import Etapa, TramiteEtapa
 
 
 def inicio(request):
@@ -24,6 +25,8 @@ def nuevo(request):
 
 def consultar(request):
     resultado = None
+    no_encontrado = False
+    seguimiento = []
     if request.method == 'POST':
         form = ConsultaTramiteForm(request.POST)
         if form.is_valid():
@@ -34,10 +37,22 @@ def consultar(request):
                 titular_dni_cuit=cd['dni_cuit'],
             ).select_related('etapa_actual', 'organismo_actual').first()
             if not resultado:
-                messages.error(request, 'No se encontró un trámite con los datos ingresados.')
+                no_encontrado = True
     else:
         form = ConsultaTramiteForm()
-    return render(request, 'public/consultar.html', {'form': form, 'resultado': resultado})
+    if resultado:
+        completadas = set(resultado.etapas_historial.filter(
+            estado__in=[TramiteEtapa.Estado.APROBADO, TramiteEtapa.Estado.FINALIZADO]
+        ).values_list('etapa_id', flat=True))
+        for etapa in Etapa.objects.select_related('organismo').all():
+            estado = 'done' if etapa.pk in completadas else 'pending'
+            if etapa.pk == resultado.etapa_actual_id:
+                estado = 'current'
+            seguimiento.append({'etapa': etapa, 'estado': estado})
+    return render(request, 'public/consultar.html', {
+        'form': form, 'resultado': resultado, 'no_encontrado': no_encontrado,
+        'seguimiento': seguimiento,
+    })
 
 
 @login_required

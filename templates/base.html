@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% block shell %}
@@ -30,5 +31,6 @@
 <main>{% block content %}{% endblock %}</main>
 <footer class="public-footer"><div><strong>Seguimiento GGER</strong><span>Sistema de trazabilidad de trámites de Generación Distribuida</span></div><span>Secretaría de Minería y Energía de Salta</span></footer>
 {% endblock %}
+{% block extra_scripts %}{% endblock %}
 </body>
 </html>
