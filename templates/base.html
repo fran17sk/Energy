@@ -14,20 +14,26 @@
   {% block extra_head %}{% endblock %}
   <link rel="stylesheet" href="{% static 'css/ui.css' %}">
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% if '/institucional/' in request.path %}ui-institutional{% else %}ui-public{% endif %} {% block body_class %}{% endblock %}">
 {% include 'ui/icons.html' %}
 <a href="#main-content" class="ui-skip-link">Saltar al contenido</a>
+{% if '/institucional/' in request.path %}
 {% include 'ui/sidebar.html' %}
 <button class="ui-backdrop" type="button" aria-label="Cerrar navegación" tabindex="-1" hidden></button>
+{% endif %}
 <div class="ui-workspace">
+  {% if '/institucional/' in request.path %}
   <header class="ui-topbar">
     <div class="ui-topbar-leading"><button class="ui-icon-button ui-menu-toggle" type="button" aria-label="Abrir menú de navegación" aria-controls="app-navigation" aria-expanded="false">{% include 'ui/icon.html' with name='menu' %}</button><div class="ui-breadcrumb"><span>Seguimiento GGER</span><span aria-hidden="true">/</span><strong>{% block page_label %}{% if '/institucional/' in request.path %}Gestión institucional{% else %}Portal de trámites{% endif %}{% endblock %}</strong></div></div>
     <div class="ui-topbar-actions"><span class="ui-system-label"><i></i> Generación Distribuida</span><button type="button" class="ui-icon-button ui-theme-toggle" aria-label="Activar modo oscuro" title="Activar modo oscuro" aria-pressed="false"><span class="ui-theme-moon">{% include 'ui/icon.html' with name='moon' %}</span><span class="ui-theme-sun">{% include 'ui/icon.html' with name='sun' %}</span></button>{% if user.is_authenticated %}<span class="ui-top-avatar" title="{{ user.get_full_name|default:user.username }}">{{ user.username|slice:':1'|upper }}</span>{% else %}<a class="ui-access-link" href="{% url 'login' %}">{% include 'ui/icon.html' with name='lock' %}<span>Acceso institucional</span></a>{% endif %}</div>
   </header>
+  {% else %}{% include 'ui/public_header.html' %}{% endif %}
   <main id="main-content" class="ui-content" tabindex="-1">{% block content %}{% endblock %}</main>
   <footer class="ui-footer"><span><strong>GGER</strong> · Generación Distribuida</span><span>Secretaría de Minería y Energía · Salta</span></footer>
 </div>
+<script src="{% static 'vendor/sweetalert2/sweetalert2.all.min.js' %}" defer></script>
 <script src="{% static 'js/ui.js' %}" defer></script>
+<script src="{% static 'js/confirmaciones.js' %}" defer></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -159,7 +159,6 @@ def detalle(request, pk):
     exigir_institucional(request)
     tramite = get_object_or_404(Tramite.objects.select_related('etapa_actual', 'organismo_actual'), pk=pk)
     if request.method == 'GET':
-        tramite = services.recibir(pk, request.user)
         services.auditar(tramite, 'CONSULTA_EXPEDIENTE', request.user,
                          etapa=tramite.etapa_actual.codigo if tramite.etapa_actual_id else '')
     puede = services.puede_actuar(request.user, tramite)
@@ -182,6 +181,10 @@ def detalle(request, pk):
         'historial': tramite.etapas_historial.select_related('etapa', 'usuario'),
         'auditorias': tramite.auditorias.select_related('usuario').order_by('creado_en', 'pk'),
         'correos': tramite.notificaciones.filter(canal='EMAIL').order_by('-creado_en'),
+        'pasos_circuito': contexto_consulta(ConsultaTramiteForm(), tramite)['seguimiento'],
+        'confirmaciones': {codigo: services.resumen_actuacion(tramite, codigo) for codigo, _ in acciones},
+        'accion_info': services.resumen_actuacion(tramite, acciones[0][0]) if acciones else None,
+        'requiere_recepcion': puede and services.requiere_recepcion(tramite),
     })
 
 

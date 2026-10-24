@@ -49,6 +49,11 @@ class CircuitoTests(TestCase):
         self.client.force_login(self.users[sigla])
         response = self.client.get(reverse('institucional_tramite_detalle', args=[self.t.pk]))
         self.assertEqual(response.status_code, 200)
+        if response.context['requiere_recepcion']:
+            self.client.post(reverse('institucional_tramite_detalle', args=[self.t.pk]), {
+                'accion': 'recibir', 'etapa': response.context['tramite'].etapa_actual.codigo,
+            })
+            response = self.client.get(reverse('institucional_tramite_detalle', args=[self.t.pk]))
         self.t.refresh_from_db()
         return response
 
@@ -277,3 +282,24 @@ class CircuitoTests(TestCase):
         self.t.refresh_from_db()
         self.assertEqual(self.t.estado_actual, 'CONVOCADO')
         self.assertTrue(self.t.auditorias.filter(accion='REINTENTO_CORREO', usuario=self.users['EDESA']).exists())
+
+    def test_abrir_no_cambia_estado_hasta_confirmar_recepcion(self):
+        self.client.force_login(self.users['EDESA'])
+        url = reverse('institucional_tramite_detalle', args=[self.t.pk])
+        response = self.client.get(url)
+        self.assertTrue(response.context['requiere_recepcion'])
+        self.t.refresh_from_db()
+        self.assertEqual(self.t.etapa_actual.codigo, 'ingreso-factibilidad')
+        self.assertFalse(self.t.auditorias.filter(accion='RECIBIDO').exists())
+        self.client.post(url, {'accion': 'recibir', 'etapa': 'ingreso-factibilidad'})
+        self.t.refresh_from_db()
+        self.assertEqual(self.t.etapa_actual.codigo, 'respuesta-factibilidad')
+        self.assertEqual(self.t.auditorias.filter(accion='RECIBIDO').count(), 1)
+
+    def test_portal_publico_sin_sidebar_aun_con_usuario_institucional(self):
+        self.client.force_login(self.users['EDESA'])
+        for path in ['/', '/tramites/nuevo/', '/tramites/consultar/', '/acceso/']:
+            response = self.client.get(path)
+            self.assertNotContains(response, 'id="app-navigation"')
+            self.assertContains(response, 'ui-theme-toggle')
+        self.assertContains(self.client.get('/institucional/'), 'id="app-navigation"')

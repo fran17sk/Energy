@@ -6,7 +6,7 @@
   <ul class="expediente-docs">{% for documento in resultado.documentos.all %}<li><a href="{% url 'tramite_documento' documento.pk %}">{{ documento.get_tipo_display }} <span aria-hidden="true">↓</span></a><small>{{ documento.creado_en|date:'d/m/Y H:i' }}</small></li>{% empty %}<li>No hay documentos disponibles.</li>{% endfor %}</ul>
   {% if resultado.estado_actual == 'PENDIENTE_CLIENTE' %}
   <section class="expediente-upload"><span class="eyebrow">Tu siguiente paso</span><h3>Presentá tu Proyecto Ejecutivo</h3><p>Adjuntá el proyecto para que EDESA lo reciba y revise. PDF, JPG o PNG, hasta 10 MB.</p>
-    <form method="post" enctype="multipart/form-data" action="{% url 'tramite_proyecto' resultado.pk %}">{% csrf_token %}{{ proyecto_form.as_p }}<button class="btn primary" type="submit">Enviar proyecto a EDESA →</button></form>
+    <form data-confirm-form data-confirm-kind="proyecto" data-tramite="{{ resultado.numero }}" method="post" enctype="multipart/form-data" action="{% url 'tramite_proyecto' resultado.pk %}">{% csrf_token %}{{ proyecto_form.as_p }}<button class="btn primary" type="submit">Enviar proyecto a EDESA →</button></form>
   </section>
   {% elif resultado.estado_actual == 'PROYECTO_ENVIADO' %}<p class="consulta-notice">Tu proyecto fue enviado. EDESA debe recibirlo y revisarlo.</p>{% endif %}
   <h3>Actuaciones registradas</h3>

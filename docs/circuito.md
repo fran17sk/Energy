@@ -6,19 +6,19 @@ El cliente registra la **solicitud de factibilidad**, con PDF/JPG/PNG obligatori
 
 | Etapa | Responsable | Recepción y condición de avance |
 | --- | --- | --- |
-| Solicitud de factibilidad | EDESA | Al abrirla un gestor de EDESA, se registra recibido con usuario/organismo/fecha/hora y se abre Respuesta de factibilidad pendiente. |
+| Solicitud de factibilidad | EDESA | Al confirmar la recepción un gestor de EDESA, se registra recibido con usuario/organismo/fecha/hora y se abre Respuesta de factibilidad pendiente. |
 | Respuesta de factibilidad | EDESA | Requiere archivo. Se envía al correo del titular como adjunto. Si SMTP falla, queda pendiente de envío y no habilita el proyecto. |
-| Presentación de Proyecto Ejecutivo | Cliente / EDESA | Después del envío de la respuesta queda pendiente del cliente. El cliente verifica código, NIS y DNI/CUIT y adjunta el proyecto. Queda Proyecto enviado y aparece como tarea de EDESA. Al abrir EDESA se registra recibido. |
+| Presentación de Proyecto Ejecutivo | Cliente / EDESA | Después del envío de la respuesta queda pendiente del cliente. El cliente verifica código, NIS y DNI/CUIT y adjunta el proyecto. Queda Proyecto enviado y aparece como tarea de EDESA. Al confirmar la recepción EDESA se registra recibido. |
 | Previsado | EDESA | Marca previsado y remite a COPAIPA. |
-| Recepción y visado | COPAIPA | Al abrir se registra recibido. Adjunta dictamen de aprobación y el trámite queda visado y se remite a la Secretaría. |
-| Recepción y expediente | Secretaría de Minería y Energía | Al abrir se registra recibido. Primero debe asociar el número de expediente administrativo. |
+| Recepción y visado | COPAIPA | Al confirmar la recepción se registra recibido. Adjunta dictamen de aprobación y el trámite queda visado y se remite a la Secretaría. |
+| Recepción y expediente | Secretaría de Minería y Energía | Al confirmar la recepción se registra recibido. Primero debe asociar el número de expediente administrativo. |
 | Dictamen | Secretaría de Minería y Energía | Con expediente asociado, adjunta dictamen. La sección queda aprobada y se remite a ENRESP. |
-| Recepción y resolución | ENRESP | Al abrir se registra recibido. Adjunta resolución, queda aprobado por el ente y vuelve a EDESA. |
+| Recepción y resolución | ENRESP | Al confirmar la recepción se registra recibido. Adjunta resolución, queda aprobado por el ente y vuelve a EDESA. |
 | Recepción final y contrato | EDESA | Se registra una recepción distinta de las anteriores. Envía al cliente una convocatoria con oficina e instrucciones para firmar. Sólo tras el envío del correo permite adjuntar el contrato firmado. |
 | Inspección | EDESA | Con contrato adjunto, programa fecha/hora futura; luego registra la inspección efectivamente realizada. |
 | Conexión | EDESA | Registra fecha/hora de conexión, posterior a la inspección. El trámite queda finalizado y visible para todas las partes. |
 
-Las recepciones ocurren sólo al abrir el **detalle** con un gestor del organismo responsable; listar, buscar o abrir desde otro organismo no acusa recepción. Cada apertura institucional queda registrada además como `CONSULTA_EXPEDIENTE`. Los roles `OPER`, `RESP` y `ADMIN`, con organismo asignado, pueden actuar sólo en etapas de su organismo. El rol `CONS` es de lectura. Un superusuario sin organismo tampoco actúa en nombre de EDESA u otro organismo: debe tener organismo y rol de gestión para hacerlo.
+Las recepciones se proponen al abrir el **detalle** y se registran únicamente después de confirmar el resumen SweetAlert con un gestor del organismo responsable; cancelar permite consultar sin cambiar el estado. Listar, buscar o abrir desde otro organismo no acusa recepción. Cada apertura institucional queda registrada además como `CONSULTA_EXPEDIENTE`. Los roles `OPER`, `RESP` y `ADMIN`, con organismo asignado, pueden actuar sólo en etapas de su organismo. El rol `CONS` es de lectura. Un superusuario sin organismo tampoco actúa en nombre de EDESA u otro organismo: debe tener organismo y rol de gestión para hacerlo.
 
 Todos los organismos pueden ver todos los estados, documentos y el registro cronológico. El administrador de Django puede consultar estos registros pero no editar estados, borrar el historial ni saltar transiciones desde el admin. La administración de usuarios y organismos permite asignar los accesos correspondientes.
 

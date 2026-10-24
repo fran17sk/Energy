@@ -1,0 +1,11 @@
+<header class="ui-public-header">
+  <div class="ui-public-header-inner">
+    <a href="{% url 'inicio' %}" class="ui-brand" aria-label="GGER, ir al inicio"><span class="ui-brand-mark">{% include 'ui/icon.html' with name='bolt' %}</span><span class="ui-brand-text"><strong>GGER<span class="ui-brand-dot">.</span></strong><small>Generación Distribuida · Salta</small></span></a>
+    <nav class="ui-public-nav" aria-label="Navegación pública">
+      <a href="{% url 'inicio' %}" {% if request.resolver_match.url_name == 'inicio' %}aria-current="page"{% endif %}>Inicio</a>
+      <a href="{% url 'tramite_nuevo' %}" {% if request.resolver_match.url_name == 'tramite_nuevo' %}aria-current="page"{% endif %}>Iniciar trámite</a>
+      <a href="{% url 'tramite_consultar' %}" {% if request.resolver_match.url_name == 'tramite_consultar' %}aria-current="page"{% endif %}>Consultar estado</a>
+    </nav>
+    <div class="ui-topbar-actions">{% include 'ui/theme_button.html' %}{% if user.is_authenticated %}<a class="ui-access-link" href="{% url 'institucional_dashboard' %}">{% include 'ui/icon.html' with name='grid' %}<span>Panel institucional</span></a>{% else %}<a class="ui-access-link" href="{% url 'login' %}">{% include 'ui/icon.html' with name='lock' %}<span>Acceso institucional</span></a>{% endif %}</div>
+  </div>
+</header>

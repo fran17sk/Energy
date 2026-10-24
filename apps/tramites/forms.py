@@ -91,6 +91,9 @@ class AccionTramiteForm(forms.Form):
         self.fields['accion'].choices = acciones
         self.fields['accion'].label = 'Actuación'
         codigos = {codigo for codigo, _ in acciones}
+        if len(acciones) == 1:
+            self.fields['accion'].widget = forms.HiddenInput()
+            self.fields['accion'].initial = acciones[0][0]
         if not codigos.intersection({'respuesta', 'copaipa', 'dictamen', 'resolucion', 'contrato'}):
             self.fields.pop('archivo')
         if 'expediente' not in codigos:
@@ -98,15 +101,17 @@ class AccionTramiteForm(forms.Form):
         if not codigos.intersection({'programar', 'inspeccionar', 'conectar'}):
             self.fields.pop('fecha')
 
-    def clean(self):
-        data = super().clean()
-        accion = data.get('accion')
-        if accion in {'respuesta', 'copaipa', 'dictamen', 'resolucion', 'contrato'} and not data.get('archivo'):
-            self.add_error('archivo', 'Esta actuación requiere un documento.')
-        if accion == 'expediente' and not data.get('expediente'):
-            self.add_error('expediente', 'Ingresá el número de expediente.')
-        if accion in {'programar', 'inspeccionar', 'conectar'} and not data.get('fecha'):
-            self.add_error('fecha', 'Ingresá la fecha y hora de la actuación.')
-        if accion == 'convocar' and not data.get('observacion'):
-            self.add_error('observacion', 'Indicá la oficina y las instrucciones para firmar el contrato.')
-        return data
+        required_messages = {
+            'archivo': 'Esta actuación requiere un documento.',
+            'expediente': 'Ingresá el número de expediente.',
+            'fecha': 'Ingresá la fecha y hora de la actuación.',
+        }
+        for name, message in required_messages.items():
+            if name in self.fields:
+                self.fields[name].required = True
+                self.fields[name].error_messages['required'] = message
+        if 'convocar' in codigos:
+            self.fields['observacion'].required = True
+            self.fields['observacion'].error_messages['required'] = 'Indicá la oficina y las instrucciones para firmar el contrato.'
+        if codigos == {'recibir'}:
+            self.fields.pop('observacion')

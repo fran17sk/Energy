@@ -24,12 +24,14 @@
   function updateSidebar(value) {
     root.dataset.sidebar = value;
     const collapsed = value === 'collapsed';
+    if (!collapse) return;
     collapse.setAttribute('aria-expanded', String(!collapsed));
     collapse.setAttribute('aria-label', collapsed ? 'Expandir menú' : 'Colapsar menú');
     collapse.title = collapse.getAttribute('aria-label');
     collapse.querySelector('span').textContent = collapse.getAttribute('aria-label');
   }
   function drawer(open, restoreFocus = true) {
+    if (!sidebar) return;
     drawerOpen = open && mobile.matches;
     root.classList.toggle('ui-drawer-open', drawerOpen);
     backdrop.hidden = !drawerOpen;
@@ -52,15 +54,15 @@
     updateTheme(value);
     store('gger.theme', value);
   });
-  collapse.addEventListener('click', () => {
+  collapse?.addEventListener('click', () => {
     const value = root.dataset.sidebar === 'collapsed' ? 'expanded' : 'collapsed';
     updateSidebar(value);
     store('gger.sidebar', value);
   });
-  toggle.addEventListener('click', () => drawer(!drawerOpen));
-  close.addEventListener('click', () => drawer(false));
-  backdrop.addEventListener('click', () => drawer(false));
-  sidebar.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+  toggle?.addEventListener('click', () => drawer(!drawerOpen));
+  close?.addEventListener('click', () => drawer(false));
+  backdrop?.addEventListener('click', () => drawer(false));
+  sidebar?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
     if (drawerOpen) drawer(false);
   }));
   document.addEventListener('keydown', event => {
@@ -74,7 +76,7 @@
     }
   });
   mobile.addEventListener('change', () => {
-    const focusInside = sidebar.contains(document.activeElement);
+    const focusInside = sidebar?.contains(document.activeElement);
     drawer(false, false);
     if (mobile.matches && focusInside) toggle.focus();
   });

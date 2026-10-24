@@ -38,8 +38,50 @@ def puede_actuar(user, tramite):
             and tramite.estado_actual != Tramite.Estado.FINALIZADO)
 
 
+ACCION_RESUMEN = {
+    'recibir': {'titulo': 'Confirmar recepción del trámite', 'resultado': 'Se registrará la recepción y se habilitará la siguiente actuación de tu organismo.'},
+    'respuesta': {'titulo': 'Enviar respuesta de factibilidad', 'resultado': 'Se adjuntará la respuesta y se enviará al correo del titular. Una vez aceptado el correo, se habilitará la presentación del Proyecto Ejecutivo.'},
+    'previsar': {'titulo': 'Previsar y remitir a COPAIPA', 'resultado': 'El proyecto quedará previsado por EDESA y pasará a COPAIPA para su recepción y visado.'},
+    'copaipa': {'titulo': 'Visar y remitir a la Secretaría', 'resultado': 'Se adjuntará el dictamen, quedará visado por COPAIPA y se remitirá a la Secretaría de Minería y Energía.'},
+    'expediente': {'titulo': 'Asociar expediente administrativo', 'resultado': 'El número quedará asociado al trámite y se habilitará la carga del dictamen de la Secretaría.'},
+    'dictamen': {'titulo': 'Aprobar y remitir al ente regulador', 'resultado': 'Se adjuntará el dictamen, se aprobará la sección de la Secretaría y se enviará el trámite a ENRESP.'},
+    'resolucion': {'titulo': 'Aprobar resolución y remitir a EDESA', 'resultado': 'Se adjuntará la resolución del ente regulador y se enviará el trámite a EDESA para gestionar el contrato.'},
+    'convocar': {'titulo': 'Notificar la firma del contrato', 'resultado': 'El titular recibirá un correo con las instrucciones indicadas para acercarse a firmar el contrato.'},
+    'contrato': {'titulo': 'Registrar contrato firmado', 'resultado': 'Se incorporará el contrato al expediente, disponible para el titular, y se habilitará la programación de la inspección.'},
+    'programar': {'titulo': 'Programar inspección', 'resultado': 'Se registrarán la fecha y hora de la inspección y se enviará una notificación al titular.'},
+    'inspeccionar': {'titulo': 'Registrar inspección realizada', 'resultado': 'Se dejará constancia de la inspección realizada y se habilitará el registro de la conexión.'},
+    'conectar': {'titulo': 'Registrar conexión y finalizar', 'resultado': 'La conexión quedará registrada y el trámite finalizará. Todos los organismos podrán consultar el cierre y se notificará al titular.'},
+}
+
+
+def resumen_actuacion(tramite, codigo):
+    resumen = dict(ACCION_RESUMEN[codigo])
+    if codigo == 'recibir':
+        etapa = tramite.etapa_actual.codigo
+        destino = RECEPCIONES.get(etapa)
+        if etapa == 'presentacion-proyecto-ejecutivo':
+            destino = 'previsado-proyecto-ejecutivo'
+        if destino:
+            nombre = Etapa.objects.get(codigo=destino).nombre
+            resumen['resultado'] = f'Se registrará la recepción en {tramite.organismo_actual.sigla} y se habilitará la etapa «{nombre}».'
+        else:
+            resumen['resultado'] = 'Se registrará la recepción final en EDESA y se habilitará la convocatoria al titular para firmar el contrato.'
+    return resumen
+
+
+def requiere_recepcion(tramite):
+    if not tramite.etapa_actual_id or tramite.estado_actual == 'FINALIZADO':
+        return False
+    codigo = tramite.etapa_actual.codigo
+    return (codigo in RECEPCIONES or
+            (codigo == 'presentacion-proyecto-ejecutivo' and tramite.estado_actual == 'PROYECTO_ENVIADO') or
+            (codigo == 'firma-contrato' and tramite.estado_actual == 'PENDIENTE'))
+
+
 def acciones_disponibles(tramite):
     codigo = tramite.etapa_actual.codigo if tramite.etapa_actual_id else ''
+    if requiere_recepcion(tramite):
+        return [('recibir', 'Confirmar recepción del trámite')]
     if tramite.estado_actual == Tramite.Estado.PENDIENTE_ENVIO:
         return []
     if codigo == 'dictamen-expediente' and tramite.expediente_administrativo:
@@ -98,7 +140,7 @@ def recibir(pk, user):
         return tramite
     codigo = tramite.etapa_actual.codigo
     if codigo in RECEPCIONES:
-        historial(tramite, 'RECIBIDO', user, 'Recibido por el organismo al abrir el trámite.')
+        historial(tramite, 'RECIBIDO', user, 'Recibido por el organismo tras confirmar la recepción.')
         auditar(tramite, 'RECIBIDO', user, etapa=codigo, organismo=tramite.organismo_actual.sigla)
         mover(tramite, RECEPCIONES[codigo], user=user)
         # La respuesta de factibilidad comienza pendiente; los demás dictámenes, recibidos.
@@ -144,6 +186,8 @@ def actuar(pk, user, data):
     accion = data['accion']
     if data['etapa'] != codigo or accion not in dict(acciones_disponibles(tramite)):
         raise ValidationError('El trámite cambió de estado. Actualizá la pantalla antes de continuar.')
+    if accion == 'recibir':
+        return recibir(pk, user)
     fecha = data.get('fecha')
     if accion in {'programar', 'inspeccionar', 'conectar'} and not fecha:
         raise ValidationError('Ingresá la fecha y hora de la actuación.')
