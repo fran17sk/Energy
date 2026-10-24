@@ -64,7 +64,8 @@ LOGIN_URL = '/acceso/'
 LOGIN_REDIRECT_URL = '/institucional/'
 LOGOUT_REDIRECT_URL = '/'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_TIMEOUT = 15
 EMAIL_HOST = env('EMAIL_HOST', default='localhost')
 EMAIL_PORT = env('EMAIL_PORT', default=25)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
@@ -82,3 +83,9 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
+
+# Estos archivos deben servirse exclusivamente desde las vistas autorizadas.
+PRIVATE_MEDIA_ROOT = Path(env("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "private_uploads")))
+
+FILE_UPLOAD_PERMISSIONS = 0o600
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o700

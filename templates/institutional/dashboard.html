@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/expediente.css' %}">{% endblock %}
 {% block title %}Dashboard institucional{% endblock %}
 {% block body_class %}institutional-body{% endblock %}
 {% block shell %}
@@ -8,8 +10,8 @@
     <nav class="side-nav">
       <a class="active" href="{% url 'institucional_dashboard' %}"><span>⌂</span> Dashboard</a>
       <a href="{% url 'institucional_tramites' %}"><span>▤</span> Trámites</a>
-      <a href="#"><span>◷</span> Notificaciones <em>3</em></a>
-      <a href="#"><span>▥</span> Reportes</a>
+
+
       <div class="nav-separator"></div>
       <a href="/admin/"><span>⚙</span> Administración</a>
     </nav>
@@ -22,10 +24,7 @@
       <article class="metric-card"><div class="metric-icon amber">◷</div><div><span>Pendientes</span><strong>{{ pendientes }}</strong><small>Requieren seguimiento</small></div></article>
       <article class="metric-card"><div class="metric-icon green">✓</div><div><span>Finalizados</span><strong>{{ conectados }}</strong><small>Con conexión registrada</small></div></article>
     </div>
-    <section class="dashboard-grid">
-      <article class="panel-card panel-wide"><div class="panel-heading"><div><span class="eyebrow">Circuito</span><h2>Seguimiento de trámites</h2></div><a href="{% url 'institucional_tramites' %}">Ver todos →</a></div><div class="process"><div class="process-step done"><i>✓</i><span>EDESA</span><small>Factibilidad</small></div><div class="process-line"></div><div class="process-step active"><i>2</i><span>COPAIPA</span><small>Revisión</small></div><div class="process-line"></div><div class="process-step"><i>3</i><span>Secretaría</span><small>Dictamen</small></div><div class="process-line"></div><div class="process-step"><i>4</i><span>ENRESP</span><small>Resolución</small></div><div class="process-line"></div><div class="process-step"><i>5</i><span>EDESA</span><small>Conexión</small></div></div></article>
-      <article class="panel-card"><div class="panel-heading"><div><span class="eyebrow">Acciones</span><h2>Acceso rápido</h2></div></div><div class="quick-actions"><a href="{% url 'institucional_tramites' %}"><span class="quick-icon">⌕</span><div><strong>Buscar trámites</strong><small>Consultar y filtrar expedientes</small></div><b>→</b></a><a href="#"><span class="quick-icon">⇩</span><div><strong>Exportar información</strong><small>Excel o CSV</small></div><b>→</b></a></div></article>
-    </section>
+    <section class="panel-card" style="margin-bottom:20px"><div class="panel-heading"><div><span class="eyebrow">Requieren atención de tu organismo</span><h2>Mis tareas pendientes</h2></div><a href="{% url 'institucional_tramites' %}?mias=1">Ver todas →</a></div>{% for t in tareas %}<a class="expediente-task" href="{% url 'institucional_tramite_detalle' t.pk %}">{{ t.numero }}<small>{{ t.titular_nombre }} · {{ t.etapa_actual.nombre }} · {{ t.get_estado_actual_display }}</small></a>{% empty %}<p>No tenés tareas pendientes en la etapa actual de tu organismo.</p>{% endfor %}</section>
     <section class="panel-card table-panel"><div class="panel-heading"><div><span class="eyebrow">Actividad</span><h2>Últimos trámites</h2></div><a href="{% url 'institucional_tramites' %}">Ver todos →</a></div><div class="table-wrap"><table><thead><tr><th>Trámite</th><th>Titular</th><th>Organismo actual</th><th>Estado</th><th>Actualización</th></tr></thead><tbody>{% for t in ultimos %}<tr><td><a href="{% url 'institucional_tramite_detalle' t.pk %}">{{ t.numero }}</a><small>{{ t.nis }}</small></td><td>{{ t.titular_nombre }}</td><td><span class="org-pill">{{ t.organismo_actual|default:'Sin asignar' }}</span></td><td><span class="status status-blue">{{ t.get_estado_actual_display|default:t.estado_actual }}</span></td><td>{{ t.actualizado_en|date:'d/m/Y H:i' }}</td></tr>{% empty %}<tr><td colspan="5" class="empty">No hay trámites registrados todavía.</td></tr>{% endfor %}</tbody></table></div></section>
   </section>
 </div>

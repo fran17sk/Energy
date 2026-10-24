@@ -18,6 +18,10 @@ class Etapa(models.Model):
 
 class TramiteEtapa(models.Model):
     class Estado(models.TextChoices):
+        RECIBIDO = 'RECIBIDO', 'Recibido'
+        ENVIADA = 'ENVIADA', 'Enviada al cliente'
+        PREVISADO = 'PREVISADO', 'Previsado por EDESA'
+        VISADO = 'VISADO', 'Visado por COPAIPA'
         PENDIENTE = 'PENDIENTE', 'Pendiente'
         EN_PROCESO = 'EN_PROCESO', 'En proceso'
         APROBADO = 'APROBADO', 'Aprobado'

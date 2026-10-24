@@ -10,6 +10,7 @@ class TramiteModelTests(TestCase):
 class ConsultaTramiteTests(TestCase):
     def setUp(self):
         from apps.workflow.models import Etapa, TramiteEtapa
+        Etapa.objects.all().delete()
         self.anterior = Etapa.objects.create(orden=1, codigo='ingreso', nombre='Ingreso')
         self.actual = Etapa.objects.create(orden=2, codigo='revision', nombre='Revisión')
         self.futura = Etapa.objects.create(orden=3, codigo='conexion', nombre='Conexión')
@@ -53,7 +54,7 @@ class AltaTramiteTests(TestCase):
     def test_registro_con_adjunto_muestra_numero_y_guarda_archivo(self):
         import tempfile
         from django.core.files.uploadedfile import SimpleUploadedFile
-        with tempfile.TemporaryDirectory() as media, self.settings(MEDIA_ROOT=media):
+        with tempfile.TemporaryDirectory() as media, self.settings(PRIVATE_MEDIA_ROOT=media):
             response = self.client.post('/tramites/nuevo/', {
                 'nis': '456', 'titular_nombre': 'María Pérez',
                 'titular_dni_cuit': '30123456', 'titular_email': 'maria@example.com',

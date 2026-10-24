@@ -19,3 +19,8 @@ class Notificacion(models.Model):
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
     creado_en = models.DateTimeField(auto_now_add=True)
     enviado_en = models.DateTimeField(null=True, blank=True)
+
+    destinatario = models.EmailField(blank=True)
+    evento = models.CharField(max_length=40, blank=True)
+    documento = models.ForeignKey('tramites.DocumentoTramite', null=True, blank=True, on_delete=models.PROTECT)
+    intentos = models.PositiveIntegerField(default=0)

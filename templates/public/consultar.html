@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Consultar estado del trámite · GGER{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/consulta.css' %}">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/consulta.css' %}"><link rel="stylesheet" href="{% static 'css/expediente.css' %}">{% endblock %}
 {% block content %}
 <div class="consulta-shell">
+  {% for message in messages %}<p class="consulta-notice" role="status">{{ message }}</p>{% endfor %}
   <a class="consulta-back" href="{% url 'inicio' %}">← Volver al inicio</a>
   <header class="consulta-heading">
     <span class="eyebrow">Seguimiento en línea</span>
@@ -18,7 +19,7 @@
       <div class="consulta-field">
         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
         {{ field }}
-        {% if field.name == 'numero' %}<small>Ejemplo: GGER-2026-000001</small>{% elif field.name == 'nis' %}<small>Encontralo en tu factura de energía.</small>{% else %}<small>Ingresá el documento del titular.</small>{% endif %}
+        {% if field.name == 'numero' %}<small>Ingresá el código completo que recibiste por correo.</small>{% elif field.name == 'nis' %}<small>Encontralo en tu factura de energía.</small>{% else %}<small>Ingresá el documento del titular.</small>{% endif %}
         {% for error in field.errors %}<span class="consulta-error">{{ error }}</span>{% endfor %}
       </div>
       {% endfor %}
@@ -30,7 +31,7 @@
   {% endif %}
   {% if resultado %}
   <section class="consulta-card consulta-result" aria-labelledby="resultado-title">
-    <header class="consulta-result-heading"><div><span class="eyebrow">Resultado de tu consulta</span><h2 id="resultado-title">{{ resultado.numero }}</h2></div><span class="consulta-status">{{ resultado.estado_actual|lower|capfirst }}</span></header>
+    <header class="consulta-result-heading"><div><span class="eyebrow">Resultado de tu consulta</span><h2 id="resultado-title">{{ resultado.numero }}</h2></div><span class="consulta-status">{{ resultado.get_estado_actual_display }}</span></header>
     <div class="consulta-summary">
       <div><span>Etapa actual</span><strong>{{ resultado.etapa_actual.nombre|default:'Pendiente de asignación' }}</strong></div>
       <div><span>Organismo responsable</span><strong>{{ resultado.organismo_actual.sigla|default:'Sin asignar' }}</strong></div>
@@ -50,6 +51,7 @@
       </ol>
     </div>
     {% else %}<p class="consulta-notice">El circuito de etapas todavía no fue configurado.</p>{% endif %}
+    {% include 'public/includes/expediente_cliente.html' %}
     <footer class="consulta-result-footer"><span aria-hidden="true">ⓘ</span> El seguimiento se actualiza con cada actuación registrada por los organismos.</footer>
   </section>
   {% else %}

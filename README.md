@@ -10,16 +10,13 @@ Plataforma web para el registro, seguimiento y trazabilidad de trámites de Gene
 - Nginx + Gunicorn
 - Django Templates + HTMX (incorporación prevista en la siguiente iteración)
 
-## Alcance de esta primera base
-- Portal público: inicio, alta y consulta.
-- Usuarios institucionales.
-- Organismos.
-- Modelo de trámite.
-- Workflow parametrizable de 17 etapas.
-- Historial de etapas.
-- Notificaciones y auditoría como módulos base.
-- Dashboard institucional inicial.
-- Buscador institucional inicial.
+## Circuito operativo
+
+Solicitud de factibilidad → EDESA → Proyecto Ejecutivo del cliente → Previsado EDESA → Visado COPAIPA → Expediente y dictamen de la Secretaría de Minería y Energía → Resolución ENRESP → Contrato EDESA → Inspección → Conexión y cierre.
+
+Cada organismo ve el estado completo y sólo actúa cuando la etapa le corresponde. Toda recepción y actuación registra usuario, organismo, fecha y hora. Los clientes consultan y adjuntan el proyecto usando el código seguro, NIS y DNI/CUIT.
+
+Ver [operación, permisos, correo y actualización](docs/circuito.md).
 
 ## Instalación local
 
@@ -30,7 +27,6 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env   # Windows
 # cp .env.example .env   # Linux
-python manage.py makemigrations
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
@@ -42,18 +38,8 @@ Luego crear los organismos desde `/admin/` y ejecutar:
 python manage.py seed_workflow
 ```
 
-## Circuito inicial
+## Configuración de correo y documentos
 
-El workflow sigue la estructura proporcionada para el proyecto: EDESA, COPAIPA, Secretaría de Minería y ENRESP, con 17 actuaciones hasta la conexión a la red de la Distribuidora.
+Configurar SMTP con las variables de `.env.example` para enviar los códigos y notificaciones. Los errores quedan registrados para reintentar con `python manage.py reenviar_notificaciones`.
 
-## Próximas iteraciones
-1. Permisos por organismo y por etapa.
-2. Motor de transición del workflow.
-3. Notificaciones por email + bandeja interna.
-4. Historial visual completo.
-5. Exportación XLSX/CSV.
-6. Dashboard con métricas.
-7. Auditoría automática.
-8. Protección de consulta pública y rate limiting.
-9. Diseño UX/UI definitivo.
-10. Pruebas automatizadas y despliegue.
+Los documentos se guardan en almacenamiento privado y se descargan con autorización. No exponer `media/` ni `private_uploads/` como rutas estáticas. Consultar [las instrucciones de despliegue](docs/circuito.md#actualización) antes de actualizar una instalación existente.

@@ -8,7 +8,7 @@
   <header class="alta-heading"><span class="eyebrow">Generación Distribuida · Salta</span><h1>El primer paso de tu trámite.</h1><p>Registrá tu solicitud y obtené un número único para seguir su recorrido, desde el ingreso hasta la conexión a la red.</p></header>
   <div class="alta-layout">
     <aside class="alta-aside" aria-label="Guía para iniciar el trámite">
-      <div class="alta-guide"><span class="eyebrow">Antes de empezar</span><h2>Tené a mano</h2><ul><li><span aria-hidden="true">✓</span> Tu factura de energía, con el NIS del suministro.</li><li><span aria-hidden="true">✓</span> Los datos y el documento del titular.</li><li><span aria-hidden="true">✓</span> La información técnica de tu proyecto.</li><li><span aria-hidden="true">✓</span> La solicitud presentada ante EDESA, si ya la tenés.</li></ul><div class="alta-guide-note">Al finalizar, guardá el número generado. Lo vas a necesitar para consultar el estado de tu solicitud.</div></div>
+      <div class="alta-guide"><span class="eyebrow">Antes de empezar</span><h2>Tené a mano</h2><ul><li><span aria-hidden="true">✓</span> Tu factura de energía, con el NIS del suministro.</li><li><span aria-hidden="true">✓</span> Los datos y el documento del titular.</li><li><span aria-hidden="true">✓</span> La información técnica de tu proyecto.</li><li><span aria-hidden="true">✓</span> La solicitud de factibilidad para presentar a EDESA.</li></ul><div class="alta-guide-note">Al finalizar, guardá el número generado. Lo vas a necesitar para consultar el estado de tu solicitud.</div></div>
       <a class="alta-existing" href="{% url 'tramite_consultar' %}"><strong>¿Ya registraste tu trámite?</strong><span>Consultá su estado <span aria-hidden="true">→</span></span></a>
     </aside>
     <form method="post" enctype="multipart/form-data" class="alta-form">
@@ -34,7 +34,7 @@
         {% include 'public/includes/alta_field.html' with field=form.potencia_inyectada_kw %}
         {% include 'public/includes/alta_field.html' with field=form.coordenadas_pilar wide=True %}
       </div></fieldset>
-      <fieldset class="alta-section"><legend><span class="alta-section-number">04</span> Documentación</legend><p>Incorporá el respaldo de tu solicitud de factibilidad.</p><div class="alta-upload"><span class="alta-upload-icon" aria-hidden="true">↑</span>{% include 'public/includes/alta_field.html' with field=form.solicitud_factibilidad %}</div></fieldset>
+      <fieldset class="alta-section"><legend><span class="alta-section-number">04</span> Documentación</legend><p>Adjuntá la solicitud de factibilidad que recibirá EDESA. PDF, JPG o PNG, hasta 10 MB.</p><div class="alta-upload"><span class="alta-upload-icon" aria-hidden="true">↑</span>{% include 'public/includes/alta_field.html' with field=form.solicitud_factibilidad %}</div></fieldset>
       <div class="alta-submit"><p>Verificá que los datos sean correctos antes de registrar tu solicitud.</p><button class="btn primary" type="submit">Registrar trámite <span aria-hidden="true">→</span></button></div>
     </form>
   </div>

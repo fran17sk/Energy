@@ -9,3 +9,5 @@ media/*
 *.sqlite3
 .idea/
 .vscode/
+
+private_uploads/
