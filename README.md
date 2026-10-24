@@ -43,3 +43,7 @@ python manage.py seed_workflow
 Configurar SMTP con las variables de `.env.example` para enviar los códigos y notificaciones. Los errores quedan registrados para reintentar con `python manage.py reenviar_notificaciones`.
 
 Los documentos se guardan en almacenamiento privado y se descargan con autorización. No exponer `media/` ni `private_uploads/` como rutas estáticas. Consultar [las instrucciones de despliegue](docs/circuito.md#actualización) antes de actualizar una instalación existente.
+
+## Reportes institucionales
+
+El menú **Reportes y estadísticas** permite analizar cantidades, tiempos de recepción y respuesta por organismo, evolución de altas y gestiones pendientes. Incluye filtros de fechas/organismo y exportación CSV. Ver [definiciones y alcance de los indicadores](docs/reportes.md).

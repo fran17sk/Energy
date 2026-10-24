@@ -1,7 +1,8 @@
-from django.urls import path
+from django.urls import include, path
 from . import views
 
 urlpatterns = [
+    path('reportes/', include('apps.reportes.urls')),
     path('correos/<int:pk>/reintentar/', views.reintentar_correo, name='institucional_reintentar_correo'),
     path('', views.dashboard, name='institucional_dashboard'),
     path('tramites/', views.lista, name='institucional_tramites'),

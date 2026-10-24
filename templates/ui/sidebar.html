@@ -8,6 +8,7 @@
       <a href="{% url 'institucional_dashboard' %}" {% if route == 'institucional_dashboard' %}aria-current="page"{% endif %} title="Resumen general">{% include 'ui/icon.html' with name='grid' %}<span>Resumen general</span></a>
       <a href="{% url 'institucional_tramites' %}" {% if route == 'institucional_tramites' and not request.GET.mias or route == 'institucional_tramite_detalle' %}aria-current="page"{% endif %} title="Todos los trámites">{% include 'ui/icon.html' with name='file' %}<span>Todos los trámites</span></a>
       <a href="{% url 'institucional_tramites' %}?mias=1" {% if route == 'institucional_tramites' and request.GET.mias %}aria-current="page"{% endif %} title="Mis tareas pendientes">{% include 'ui/icon.html' with name='clock' %}<span>Mis tareas pendientes</span></a>
+      <a href="{% url 'institucional_reportes' %}" {% if route == 'institucional_reportes' %}aria-current="page"{% endif %} title="Reportes y estadísticas">{% include 'ui/icon.html' with name='chart' %}<span>Reportes y estadísticas</span></a>
       {% if user.is_staff %}<a href="{% url 'admin:index' %}" title="Administración">{% include 'ui/icon.html' with name='settings' %}<span>Administración</span></a>{% endif %}
     </nav>
     {% endif %}
