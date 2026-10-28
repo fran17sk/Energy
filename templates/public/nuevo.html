@@ -8,7 +8,7 @@
   <header class="alta-heading"><span class="eyebrow">Generación Distribuida · Salta</span><h1>Solicitud de factibilidad.</h1><p>Completá los datos del inmueble, el suministro y el equipamiento. Enviaremos la solicitud y toda la documentación al correo designado por EDESA.</p></header>
   <div class="alta-layout">
     <aside class="alta-aside" aria-label="Guía de la solicitud">
-      <div class="alta-guide"><span class="eyebrow">Antes de empezar</span><h2>Prepará tu presentación</h2><ul><li><span aria-hidden="true">✓</span> Datos del propietario y del titular del suministro.</li><li><span aria-hidden="true">✓</span> Factura de EDESA con NIS y potencia contratada.</li><li><span aria-hidden="true">✓</span> Datos del equipo y coordenadas del pilar de medición.</li><li><span aria-hidden="true">✓</span> Formulario digital y DNI del titular.</li><li><span aria-hidden="true">✓</span> Si actúa un apoderado, su DNI y el poder correspondiente.</li></ul><div class="alta-guide-note">Los datos y archivos se envían por correo a EDESA. La aplicación conserva sólo el código, NIS, correo de contacto, validación protegida del DNI/CUIT, estado y fechas para el seguimiento.</div></div>
+      <div class="alta-guide"><span class="eyebrow">Antes de empezar</span><h2>Prepará tu presentación</h2><ul><li><span aria-hidden="true">✓</span> Datos del propietario y del titular del suministro.</li><li><span aria-hidden="true">✓</span> Factura de EDESA con NIS y potencia contratada.</li><li><span aria-hidden="true">✓</span> Datos del equipo y coordenadas del pilar de medición.</li><li><span aria-hidden="true">✓</span> Formulario digital y DNI del titular.</li><li><span aria-hidden="true">✓</span> Si actúa un apoderado, su DNI y el poder correspondiente.</li></ul><div class="alta-guide-note">Los datos del formulario se guardan en el expediente. Los adjuntos iniciales se envían únicamente por correo a EDESA y no se almacenan en el servidor.</div></div>
       <div class="solicitud-attachment-note"><strong>Adjuntos</strong><span>PDF, JPG o PNG · Hasta 5 MB por archivo y 15 MB en total.</span><p>Tené toda la documentación preparada antes de enviar: el formulario no guarda borradores.</p></div>
       <a class="alta-existing" href="{% url 'tramite_consultar' %}"><strong>¿Ya tenés un código de trámite?</strong><span>Consultar su estado →</span></a>
     </aside>
@@ -55,7 +55,7 @@
         <div class="alta-upload">{% include 'public/includes/alta_field.html' with field=form.dni_apoderado %}</div>
         <div class="alta-upload">{% include 'public/includes/alta_field.html' with field=form.poder_apoderado %}</div>
       </div></fieldset>
-      <div class="solicitud-privacy">{% include 'ui/icon.html' with name='lock' %}<p>La aplicación procesa los datos y los archivos para enviarlos por correo a EDESA, sin guardar la presentación completa ni los adjuntos iniciales. Sólo se conserva el registro mínimo necesario para continuar el seguimiento.</p></div>
+      <div class="solicitud-privacy">{% include 'ui/icon.html' with name='lock' %}<p>Todos los datos del formulario se guardan para gestionar el trámite. La documentación adjunta inicial se envía al correo de EDESA y no se guarda en el servidor.</p></div>
       <div class="solicitud-validation" role="alert" hidden></div><div class="alta-submit"><p>Revisá la información y el correo para notificaciones antes de confirmar.</p><button class="btn primary" type="submit">Revisar y enviar a EDESA <span aria-hidden="true">→</span></button></div>
     </form>
   </div>

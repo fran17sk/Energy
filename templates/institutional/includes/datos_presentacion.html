@@ -1,0 +1,12 @@
+{% if tramite.secciones_presentacion %}
+<section class="wf-card">
+  <details class="wf-disclosure">
+    <summary><span>Datos de la solicitud de factibilidad</span><small>Ver presentación</small></summary>
+    <p>Información declarada al iniciar el trámite. Los adjuntos iniciales están en el correo enviado a EDESA.</p>
+    {% for seccion in tramite.secciones_presentacion %}
+      <h3>{{ seccion.titulo }}</h3>
+      <dl class="wf-facts">{% for campo in seccion.campos %}<dt>{{ campo.etiqueta }}</dt><dd>{{ campo.valor }}</dd>{% endfor %}</dl>
+    {% endfor %}
+  </details>
+</section>
+{% endif %}

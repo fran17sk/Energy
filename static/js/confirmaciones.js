@@ -2,7 +2,7 @@
   const descriptions = document.getElementById('confirmaciones-data');
   const actions = descriptions ? JSON.parse(descriptions.textContent) : {};
   const fallback = {
-    solicitud_email: { titulo: 'Enviar solicitud de factibilidad a EDESA', resultado: 'Se enviarán todos los datos y adjuntos al correo designado por EDESA. Se creará un código y un registro mínimo de seguimiento. La presentación completa y los adjuntos iniciales no se guardarán en la aplicación.' },
+    solicitud_email: { titulo: 'Enviar solicitud de factibilidad a EDESA', resultado: 'Se enviarán todos los datos y adjuntos al correo designado por EDESA. Se guardarán todos los datos del formulario y se generará un código de seguimiento. Los adjuntos iniciales se enviarán por correo y no se guardarán en el servidor.' },
     alta: { titulo: 'Registrar solicitud de factibilidad', resultado: 'Se creará tu trámite en EDESA y se enviará el código de seguimiento al correo indicado. Guardá ese código para consultar el expediente.' },
     proyecto: { titulo: 'Enviar Proyecto Ejecutivo', resultado: 'Se incorporará el proyecto al expediente y EDESA tendrá una tarea pendiente de recepción y revisión.' },
     correo: { titulo: 'Reintentar notificación por correo', resultado: 'Se intentará enviar nuevamente esta notificación al titular. Si el servidor la acepta, se aplicará el avance que corresponda al trámite.' },

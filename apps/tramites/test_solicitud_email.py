@@ -1,11 +1,11 @@
 import tempfile
+from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile, InMemoryUploadedFile
-from django.db import connection
 from django.test import TestCase, Client, override_settings
-from django.test.utils import CaptureQueriesContext
+from django.template.loader import render_to_string
 from django.urls import reverse
 from apps.auditoria.models import Auditoria
 from apps.notificaciones.models import Notificacion
@@ -35,31 +35,26 @@ class SolicitudEmailTests(TestCase):
             files.update(dni_apoderado=self.pdf('apoderado.pdf'), poder_apoderado=self.pdf('poder.pdf'))
         return files
 
-    def test_envia_toda_la_informacion_y_adjuntos_con_registro_minimo(self):
-        with CaptureQueriesContext(connection) as queries:
-            response = self.client.post(reverse('tramite_nuevo'), {**self.datos(), **self.archivos()})
+    def test_guarda_todos_los_datos_y_envia_adjuntos_sin_almacenarlos(self):
+        response = self.client.post(reverse('tramite_nuevo'), {**self.datos(), **self.archivos()})
         self.assertEqual(response.status_code, 303)
         tramite = Tramite.objects.get()
         self.assertEqual(tramite.nis, '123456789')
         self.assertEqual(tramite.titular_email, 'solicitante@example.com')
         self.assertTrue(tramite.presentacion_por_correo)
-        self.assertEqual(tramite.titular_nombre, '')
-        self.assertEqual(tramite.titular_dni_cuit, '')
+        self.assertEqual(tramite.titular_dni_cuit, '28123456')
         self.assertTrue(tramite.verificar_documento_consulta('28123456'))
-        self.assertEqual(tramite.catastro, '')
-        self.assertEqual(tramite.departamento, '')
-        self.assertEqual(tramite.tecnologia, '')
-        self.assertEqual(tramite.coordenadas_pilar, '')
-        self.assertEqual(tramite.titular_telefono, '')
-        self.assertIsNone(tramite.potencia_contratada_kw)
-        self.assertIsNone(tramite.potencia_inyectada_kw)
+        for campo, esperado in self.datos().items():
+            if campo in {'titular_dni', 'solicitante_email'}:
+                continue
+            self.assertEqual(getattr(tramite, campo), Decimal(esperado) if campo.endswith('_kw') else esperado, campo)
         self.assertFalse(tramite.solicitud_factibilidad)
         self.assertEqual(DocumentoTramite.objects.count(), 0)
         self.assertEqual(tramite.etapa_actual.codigo, 'ingreso-factibilidad')
         self.assertEqual(tramite.organismo_actual.sigla, 'EDESA')
-        sql = '\n'.join(q['sql'] for q in queries)
-        for privado in ['Ana Propietaria', 'Juan Titular', '30123456', '28123456', 'CAT-12345', '-24.7821', '+54 387 1234567']:
-            self.assertNotIn(privado, sql)
+        self.assertEqual(len(tramite.secciones_presentacion), 5)
+        evento = Auditoria.objects.get(accion='SOLICITUD_INICIADA')
+        self.assertEqual(evento.detalle['usuario_nombre'], 'Juan Solicitante')
         mensaje = mail.outbox[0]
         self.assertEqual(mensaje.to, ['recepcion-edesa@example.com'])
         self.assertEqual(mensaje.reply_to, ['solicitante@example.com'])
@@ -229,3 +224,28 @@ class SolicitudEmailTests(TestCase):
         response = self.client.post(reverse('tramite_nuevo'), {**self.datos(), **self.archivos()})
         self.assertContains(response, 'EDESA_SOLICITUD_EMAIL')
         self.assertFalse(Tramite.objects.exists())
+
+    def test_guarda_cuit_juridico_y_datos_del_apoderado(self):
+        response = self.client.post(reverse('tramite_nuevo'), {
+            **self.datos(propietario_tipo='JURIDICA', propietario_cuit='30-12345678-9',
+                         titular_tipo='JURIDICA', titular_cuit='30-98765432-1',
+                         solicitante_condicion='APODERADO'), **self.archivos(apoderado=True)})
+        self.assertEqual(response.status_code, 303)
+        tramite = Tramite.objects.get()
+        self.assertEqual(tramite.propietario_cuit, '30123456789')
+        self.assertEqual(tramite.propietario_dni, '')
+        self.assertEqual(tramite.titular_dni_cuit, '30987654321')
+        self.assertEqual(tramite.solicitante_condicion, 'APODERADO')
+        self.assertTrue(tramite.verificar_documento_consulta('30-98765432-1'))
+        self.assertEqual(len(mail.outbox[0].attachments), 4)
+        self.assertFalse(DocumentoTramite.objects.exists())
+        html = render_to_string(
+            'institutional/includes/datos_presentacion.html', {'tramite': tramite})
+        for dato in ['Ana Propietaria', '30123456789', 'Juan Titular', '30987654321',
+                     'Juan Solicitante', '28123456', 'Capital', 'Sistema fotovoltaico']:
+            self.assertIn(dato, html)
+
+    def test_registros_minimos_anteriores_no_inventan_datos(self):
+        tramite = Tramite(nis='123', titular_email='cliente@example.com', presentacion_por_correo=True)
+        self.assertEqual(tramite.secciones_presentacion, [])
+        self.assertEqual(tramite.titular_display, 'Suministro NIS 123')

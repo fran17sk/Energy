@@ -1,6 +1,6 @@
 SOLICITUD DE FACTIBILIDAD · GENERACIÓN DISTRIBUIDA
 
-Se recibió la siguiente solicitud para EDESA. La información y la documentación se remiten por correo; la aplicación conserva sólo el registro mínimo de seguimiento.
+Se recibió la siguiente solicitud para EDESA. La información y la documentación se remiten por correo; la aplicación conserva todos los datos del formulario, sin almacenar los adjuntos iniciales.
 Código de trámite: {{ numero }}
 
 {% for seccion in secciones %}{{ seccion.titulo|upper }}

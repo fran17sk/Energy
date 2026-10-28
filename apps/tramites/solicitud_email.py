@@ -1,4 +1,4 @@
-"""Datos y adjuntos iniciales sólo por correo; registro mínimo separado para seguimiento."""
+"""Datos de la solicitud persistidos; adjuntos iniciales sólo por correo."""
 from pathlib import Path
 import socket
 import smtplib
@@ -95,9 +95,15 @@ def registrar_y_enviar_solicitud(data):
     from .models import Tramite
     from .services import iniciar
     documento = data['titular_dni'] if data['titular_tipo'] == 'HUMANA' else data['titular_cuit']
-    tramite = Tramite.objects.create(nis=data['nis'], titular_email=data['solicitante_email'],
-        titular_nombre='', titular_dni_cuit='', presentacion_por_correo=True,
-        consulta_documento_hash=make_password(documento))
+    campos = {nombre: data[nombre] for nombre in (
+        'propietario_tipo', 'propietario_nombre', 'propietario_dni', 'propietario_cuit',
+        'titular_tipo', 'titular_nombre', 'nis', 'catastro', 'departamento',
+        'potencia_contratada_kw', 'tecnologia', 'tipo_conexion', 'potencia_inyectada_kw',
+        'coordenadas_pilar', 'solicitante_condicion', 'solicitante_nombre',
+        'solicitante_dni', 'solicitante_celular')}
+    tramite = Tramite.objects.create(**campos, titular_email=data['solicitante_email'],
+        titular_dni_cuit=documento, titular_telefono=data['solicitante_celular'],
+        presentacion_por_correo=True, consulta_documento_hash=make_password(documento))
     enviar_solicitud(data, tramite.numero)
     iniciar(tramite)
     return tramite

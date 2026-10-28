@@ -2,7 +2,7 @@
 
 ## Operación
 
-El cliente completa la **solicitud de factibilidad** en seis secciones y adjunta el formulario digital, DNI del titular y, si corresponde, DNI y poder del apoderado. La presentación completa se remite al correo configurable de EDESA; la aplicación conserva sólo el registro mínimo de seguimiento. El sistema genera un código aleatorio de 192 bits y envía el código al correo del solicitante. Ver [campos, límites y almacenamiento](solicitud-factibilidad.md). Debe guardarse y tratarse como una credencial. Los códigos antiguos se conservan para no interrumpir expedientes existentes.
+El cliente completa la **solicitud de factibilidad** en seis secciones y adjunta el formulario digital, DNI del titular y, si corresponde, DNI y poder del apoderado. La presentación completa se remite al correo configurable de EDESA; la aplicación guarda todos los datos del formulario, sin almacenar los adjuntos iniciales. El sistema genera un código aleatorio de 192 bits y envía el código al correo del solicitante. Ver [campos, límites y almacenamiento](solicitud-factibilidad.md). Debe guardarse y tratarse como una credencial. Los códigos antiguos se conservan para no interrumpir expedientes existentes.
 
 | Etapa | Responsable | Recepción y condición de avance |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ Las cargas admiten PDF, JPG o PNG; se comprueban extensión, firma inicial y tam
 
 ## Registro y consistencia
 
-Cada recepción, documento institucional, expediente, convocatoria, inspección y conexión deja un evento de auditoría con usuario, organismo y fecha/hora. Las nuevas presentaciones públicas conservan NIS, correo del solicitante y verificación protegida del DNI/CUIT, sin guardar los nombres ni el contenido completo del formulario; no crean una cuenta institucional. La auditoría conserva además el nombre de usuario y sigla del organismo al momento del evento, aunque luego cambie la cuenta. Se guardan fechas conscientes de zona horaria y se muestran en hora local de Salta, con segundos en el registro de eventos. La fecha informada de inspección/conexión es independiente del instante en que el usuario la registra.
+Cada recepción, documento institucional, expediente, convocatoria, inspección y conexión deja un evento de auditoría con usuario, organismo y fecha/hora. Las nuevas presentaciones públicas conservan todos los datos del formulario, incluidos propietario, titular y solicitante; los adjuntos iniciales sólo se envían por correo. No crean una cuenta institucional. La auditoría conserva además el nombre de usuario y sigla del organismo al momento del evento, aunque luego cambie la cuenta. Se guardan fechas conscientes de zona horaria y se muestran en hora local de Salta, con segundos en el registro de eventos. La fecha informada de inspección/conexión es independiente del instante en que el usuario la registra.
 
 Las transiciones usan transacciones y bloqueo de fila en PostgreSQL. Un formulario viejo no permite repetir o saltar una actuación. Las etapas antiguas de salida se mantienen para preservar historial y quedan fuera del circuito activo. No se inventan documentos ni aprobaciones de expedientes anteriores.
 

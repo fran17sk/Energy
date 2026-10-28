@@ -1,4 +1,4 @@
-# Solicitud de factibilidad y registro mínimo
+# Solicitud de factibilidad y almacenamiento de datos
 
 ## Formulario
 
@@ -31,27 +31,23 @@ Si el destino no está configurado, SMTP falla o el backend no acepta el mensaje
 
 ## Qué se guarda y qué no
 
-Se conserva el mínimo autorizado para continuar el circuito:
+Se guardan todos los datos validados del formulario: propietario (tipo de persona, nombre, DNI o CUIT), titular (tipo, nombre y DNI/CUIT), NIS, catastro, departamento, potencia contratada, tecnología, conexión, potencia inyectada, coordenadas y solicitante (condición, nombre, DNI, celular y correo). El correo para notificaciones continúa en `titular_email`, por compatibilidad, y corresponde al solicitante. El documento del titular también mantiene un hash para validar la consulta pública.
 
-- Código aleatorio del trámite y NIS.
-- Correo del solicitante para notificaciones.
-- Hash con sal del DNI o CUIT del titular para comprobar las consultas, sin guardar ese documento en texto plano.
-- Identificador técnico de la modalidad de presentación, etapa, organismo, estado, fechas e historial operativo/auditoría.
-- Notificación del código al solicitante, con contenido genérico de seguimiento y su estado de envío.
+Se conservan además el código, estado, organismo, fechas, historial y auditoría. Las vistas institucionales muestran los datos completos en una sección de la presentación; la auditoría identifica al solicitante declarado.
 
-No se guardan los nombres del propietario, titular o solicitante; DNI/CUIT en texto plano; celular; catastro; departamento; potencias; tecnología; conexión; coordenadas; ni los adjuntos iniciales. Esos datos y documentos se envían únicamente por correo a EDESA. El registro mínimo no tiene archivo de solicitud ni filas iniciales en `DocumentoTramite`. En las vistas se identifica como `Suministro NIS …`, sin inventar un nombre de titular.
+**No se guardan los adjuntos iniciales**: formulario digital, DNI del titular y, cuando corresponda, DNI y poder del apoderado. Se envían por correo a EDESA. No se crean archivos ni filas iniciales en `DocumentoTramite`.
 
 El formulario es un `forms.Form` independiente del modelo, y el registro usa una lista explícita de campos permitidos. El receptor procesa los archivos exclusivamente en RAM mediante un upload handler instalado antes de la comprobación CSRF; una vista interna vuelve a exigir CSRF. Se impiden archivos temporales incluso cuando los handlers generales de Django usarían disco. No se registra el contenido de la presentación en logs ni se utiliza una cola persistente para el correo completo.
 
-La aceptación SMTP y la creación mínima se coordinan en una transacción. No se conserva el contenido completo para reintentos: si el envío falla, el solicitante debe volver a adjuntar los documentos. Como SMTP y la base no comparten una transacción distribuida, un corte después de la aceptación SMTP puede dejar un correo recibido sin una confirmación completa del registro; ante un fallo en ese punto conviene verificar con EDESA antes de reenviar.
+La aceptación SMTP y la creación del trámite se coordinan en una transacción. No se conservan adjuntos para reintentos: si el envío falla, el solicitante debe volver a adjuntar los documentos. Como SMTP y la base no comparten una transacción distribuida, un corte después de la aceptación SMTP puede dejar un correo recibido sin una confirmación completa del registro; ante un fallo en ese punto conviene verificar con EDESA antes de reenviar.
 
-El código al solicitante se envía por la bandeja de notificaciones del circuito, después de confirmar la transacción. Si ese segundo correo falla, el registro mínimo sigue válido, el código se muestra en pantalla y el correo del código puede reintentarse. La confirmación usa una cookie firmada, HttpOnly y de diez minutos, que contiene sólo el identificador técnico; no guarda el formulario en sesión ni incluye datos o códigos en la URL. Recargar esa pantalla no reenvía la presentación.
+El código al solicitante se envía por la bandeja de notificaciones del circuito, después de confirmar la transacción. Si ese segundo correo falla, el trámite sigue válido, el código se muestra en pantalla y el correo del código puede reintentarse. La confirmación usa una cookie firmada, HttpOnly y de diez minutos, que contiene sólo el identificador técnico; no guarda el formulario en sesión ni incluye datos o códigos en la URL. Recargar esa pantalla no reenvía la presentación.
 
 ## Continuidad del circuito
 
-El registro mínimo se asigna al ingreso de EDESA. La consulta sigue usando código + NIS + DNI/CUIT del titular, comparando el documento con su hash. Después continúan las recepciones, respuesta de factibilidad, Proyecto Ejecutivo, dictámenes, contrato, inspección y conexión existentes. Los documentos agregados en esas etapas posteriores siguen el almacenamiento privado del circuito; la exclusión de almacenamiento corresponde a la presentación y adjuntos iniciales.
+El trámite se asigna al ingreso de EDESA. La consulta sigue usando código + NIS + DNI/CUIT del titular, comparando el documento con su hash. Después continúan las recepciones, respuesta de factibilidad, Proyecto Ejecutivo, dictámenes, contrato, inspección y conexión existentes. Los documentos agregados en esas etapas posteriores siguen el almacenamiento privado del circuito; la exclusión de almacenamiento corresponde a la presentación y adjuntos iniciales.
 
-Los trámites anteriores mantienen sus datos y archivos y conservan la consulta habitual. Las métricas de tiempos y cantidades incluyen los nuevos registros mínimos. No se pueden reconstruir métricas geográficas o técnicas sobre campos que no se guardan.
+Los trámites anteriores mantienen sus datos y archivos y conservan la consulta habitual. Los creados bajo la política anterior de registro mínimo no recuperan automáticamente los datos que nunca se guardaron: deben consultarse en el correo original de EDESA. La migración añade campos vacíos sin inventar valores ni borrar información.
 
 ## Despliegue y comprobaciones
 
@@ -63,4 +59,4 @@ python manage.py test --noinput
 
 Configurar `EDESA_SOLICITUD_EMAIL`, las credenciales SMTP y reiniciar Django. En producción, publicar por HTTPS. El proxy y las herramientas de monitoreo tampoco deben registrar cuerpos de formulario ni adjuntos. Si se usa Nginx, desactivar el buffering del cuerpo hacia la aplicación (`proxy_request_buffering off` con HTTP/1.1) y evitar que los cuerpos se vuelquen a temporales; alinear el límite total del proxy con los 16 MB máximos de petición multipart que admite la aplicación. La aplicación por sí sola no controla archivos o logs generados por infraestructura externa.
 
-La suite comprueba campos y adjuntos condicionales, tipos de persona, opciones permitidas, límites, CSRF, ausencia de archivos temporales y guardado de adjuntos, ausencia de datos completos en SQL, rollback ante fallo SMTP, consulta protegida, continuidad del circuito y no duplicación al recargar la confirmación.
+La suite comprueba campos y adjuntos condicionales, tipos de persona, opciones permitidas, límites, CSRF, ausencia de archivos temporales y guardado de adjuntos, persistencia de todos los datos del formulario, rollback ante fallo SMTP, consulta protegida, continuidad del circuito y no duplicación al recargar la confirmación.

@@ -31,6 +31,17 @@ class Tramite(models.Model):
     presentacion_por_correo = models.BooleanField(default=False)
     consulta_documento_hash = models.CharField(max_length=128, blank=True, editable=False)
 
+    # Datos declarados en la solicitud; los adjuntos iniciales no se persisten.
+    propietario_tipo = models.CharField(max_length=10, blank=True)
+    propietario_nombre = models.CharField(max_length=180, blank=True)
+    propietario_dni = models.CharField(max_length=15, blank=True)
+    propietario_cuit = models.CharField(max_length=15, blank=True)
+    titular_tipo = models.CharField(max_length=10, blank=True)
+    solicitante_condicion = models.CharField(max_length=10, blank=True)
+    solicitante_nombre = models.CharField(max_length=180, blank=True)
+    solicitante_dni = models.CharField(max_length=15, blank=True)
+    solicitante_celular = models.CharField(max_length=30, blank=True)
+
     # Datos del suministro
     nis = models.CharField(max_length=40, db_index=True)
     catastro = models.CharField(max_length=80, blank=True)
@@ -82,6 +93,22 @@ class Tramite(models.Model):
     @property
     def titular_display(self):
         return self.titular_nombre or f'Suministro NIS {self.nis}'
+
+    @property
+    def secciones_presentacion(self):
+        if not self.solicitante_nombre:
+            return []  # Las presentaciones históricas mínimas no pueden reconstruirse.
+        from .solicitud_email import secciones_solicitud
+        datos = {campo: getattr(self, campo) for campo in (
+            'propietario_tipo', 'propietario_nombre', 'propietario_dni', 'propietario_cuit',
+            'titular_tipo', 'titular_nombre', 'nis', 'potencia_contratada_kw', 'catastro',
+            'departamento', 'tecnologia', 'tipo_conexion', 'potencia_inyectada_kw',
+            'coordenadas_pilar', 'solicitante_condicion', 'solicitante_nombre',
+            'solicitante_dni', 'solicitante_celular')}
+        datos.update(titular_dni=self.titular_dni_cuit if self.titular_tipo == 'HUMANA' else '',
+                     titular_cuit=self.titular_dni_cuit if self.titular_tipo == 'JURIDICA' else '',
+                     solicitante_email=self.titular_email)
+        return secciones_solicitud(datos)
 
     def verificar_documento_consulta(self, documento):
         if self.consulta_documento_hash:

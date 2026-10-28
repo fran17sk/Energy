@@ -98,7 +98,7 @@ def acciones_disponibles(tramite):
 def auditar(tramite, accion, user=None, **detalle):
     cliente = accion in {'SOLICITUD_INICIADA', 'PROYECTO_ENVIADO'} and user is None
     detalle.update(organismo_usuario=user.organismo.sigla if user and user.organismo_id else None,
-                   usuario_nombre=user.get_username() if user else ((tramite.titular_nombre or 'Solicitante') if cliente else 'Sistema'),
+                   usuario_nombre=user.get_username() if user else ((tramite.solicitante_nombre or tramite.titular_nombre or 'Solicitante') if cliente else 'Sistema'),
                    actor='CLIENTE' if cliente else ('INSTITUCIONAL' if user else 'SISTEMA'))
     Auditoria.objects.create(tramite=tramite, usuario=user, accion=accion, detalle=detalle)
 
