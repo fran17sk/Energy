@@ -15,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from .forms import ConsultaTramiteForm, DocumentoForm, AccionTramiteForm
 from .solicitud_forms import SolicitudFactibilidadForm
 from .solicitud_uploads import SolicitudMemoryUploadHandler
-from .solicitud_email import registrar_y_enviar_solicitud
+from .solicitud_email import registrar_y_enviar_solicitud, error_publico_envio
 from .models import Tramite, DocumentoTramite
 from . import services
 from apps.workflow.models import Etapa
@@ -53,8 +53,8 @@ def _nuevo_protegido(request):
             except Exception as exc:
                 # Nunca registrar datos, adjuntos, dirección del solicitante ni detalles SMTP.
                 logging.getLogger(__name__).warning('Solicitud no enviada (%s); no se conservan datos de la presentación para reintento.', type(exc).__name__)
-                form.add_error(None, 'No se pudo enviar la solicitud a EDESA. No se creó el trámite ni se guardaron los documentos. '
-                    'Conservá los archivos, volvé a seleccionarlos e intentá nuevamente más tarde.')
+                form.add_error(None, 'No se pudo enviar la solicitud a EDESA. ' + error_publico_envio(exc) + ' No se creó el trámite ni se guardaron los documentos. '
+                    'Conservá los archivos y volvé a seleccionarlos antes de reintentar.')
             else:
                 response = redirect('solicitud_enviada')
                 response.status_code = 303

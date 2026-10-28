@@ -215,3 +215,17 @@ class SolicitudEmailTests(TestCase):
         self.assertNotIn('Ana Propietaria', mensaje.body)
         self.assertEqual(mensaje.attachments, [])
         self.assertEqual(Notificacion.objects.get().estado, 'ENVIADA')
+
+    def test_error_dns_muestra_causa_sin_exponer_detalle_interno(self):
+        import socket
+        with patch('apps.tramites.solicitud_email.enviar_solicitud', side_effect=socket.gaierror('detalle privado')):
+            response = self.client.post(reverse('tramite_nuevo'), {**self.datos(), **self.archivos()})
+        self.assertContains(response, 'EMAIL_HOST')
+        self.assertNotContains(response, 'detalle privado')
+        self.assertFalse(Tramite.objects.exists())
+
+    @override_settings(EDESA_SOLICITUD_EMAIL='')
+    def test_falta_destinatario_indica_configuracion_necesaria(self):
+        response = self.client.post(reverse('tramite_nuevo'), {**self.datos(), **self.archivos()})
+        self.assertContains(response, 'EDESA_SOLICITUD_EMAIL')
+        self.assertFalse(Tramite.objects.exists())

@@ -1,9 +1,11 @@
 """Datos y adjuntos iniciales sólo por correo; registro mínimo separado para seguimiento."""
 from pathlib import Path
+import socket
+import smtplib
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import validate_email
 from django.template.loader import render_to_string
@@ -36,14 +38,38 @@ def secciones_solicitud(data):
     return personas + [{'titulo': titulo, 'campos': [{'etiqueta': k, 'valor': v} for k, v in campos]} for titulo, campos in grupos]
 
 
-def enviar_solicitud(data, numero):
+class ConfiguracionSolicitudError(ImproperlyConfigured):
+    """Mensaje de configuración controlado y apto para mostrar al usuario."""
+
+
+def error_publico_envio(exc):
+    """Diagnóstico útil sin mostrar credenciales ni respuestas del servidor SMTP."""
+    if isinstance(exc, ConfiguracionSolicitudError):
+        return str(exc)
+    if isinstance(exc, socket.gaierror):
+        return 'No se pudo resolver el servidor SMTP. Revisá EMAIL_HOST y la conexión DNS del equipo.'
+    if isinstance(exc, smtplib.SMTPAuthenticationError):
+        return 'El servidor rechazó la autenticación. Revisá EMAIL_HOST_USER y EMAIL_HOST_PASSWORD (contraseña de aplicación).'
+    if isinstance(exc, (TimeoutError, ConnectionError, smtplib.SMTPConnectError)):
+        return 'No se pudo conectar al servidor de correo. Revisá la conexión, EMAIL_HOST, EMAIL_PORT y EMAIL_USE_TLS.'
+    return 'El correo no pudo ser enviado. Contactá al administrador para revisar el servicio SMTP.'
+
+
+def validar_configuracion_envio():
     destino = getattr(settings, 'EDESA_SOLICITUD_EMAIL', '').strip()
     if not destino:
-        raise ImproperlyConfigured('Falta configurar el correo receptor de EDESA.')
-    validate_email(destino)
-    # Los backends de consola o archivo conservarían el contenido fuera del correo.
+        raise ConfiguracionSolicitudError('Falta configurar EDESA_SOLICITUD_EMAIL en el archivo .env y reiniciar la aplicación.')
+    try:
+        validate_email(destino)
+    except ValidationError:
+        raise ConfiguracionSolicitudError('EDESA_SOLICITUD_EMAIL debe contener una dirección de correo válida.') from None
     if settings.EMAIL_BACKEND not in {'django.core.mail.backends.smtp.EmailBackend', 'django.core.mail.backends.locmem.EmailBackend'}:
-        raise ImproperlyConfigured('Este envío requiere un backend SMTP sin escritura de contenido en archivos o consola.')
+        raise ConfiguracionSolicitudError('Este envío requiere un backend SMTP sin escritura de contenido en archivos o consola.')
+    return destino
+
+
+def enviar_solicitud(data, numero):
+    destino = validar_configuracion_envio()
     contexto = {'secciones': secciones_solicitud(data),
         'documentos': [nombre for campo, nombre in ADJUNTOS if data.get(campo)],
         'contacto': data['solicitante_email'], 'numero': numero}

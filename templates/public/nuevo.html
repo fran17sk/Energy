@@ -12,19 +12,19 @@
       <div class="solicitud-attachment-note"><strong>Adjuntos</strong><span>PDF, JPG o PNG · Hasta 5 MB por archivo y 15 MB en total.</span><p>Tené toda la documentación preparada antes de enviar: el formulario no guarda borradores.</p></div>
       <a class="alta-existing" href="{% url 'tramite_consultar' %}"><strong>¿Ya tenés un código de trámite?</strong><span>Consultar su estado →</span></a>
     </aside>
-    <form method="post" enctype="multipart/form-data" class="alta-form solicitud-form" data-solicitud-form data-confirm-form data-confirm-kind="solicitud_email" autocomplete="off">
+    <form method="post" enctype="multipart/form-data" class="alta-form solicitud-form" data-solicitud-form data-confirm-form data-confirm-kind="solicitud_email" autocomplete="on">
       {% csrf_token %}
       <div class="alta-form-intro"><span>Presentación para EDESA</span><small>Los campos con <span class="alta-required">*</span> son obligatorios.</small></div>
       {% if error_carga %}<div class="alta-error-summary" role="alert">{{ error_carga }}</div>{% endif %}
       {% if form.errors %}<div class="alta-error-summary" role="alert" tabindex="-1"><strong>Revisá los datos antes de continuar.</strong><ul>{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul><p>Si adjuntaste documentos, volvé a seleccionarlos antes de enviar.</p></div>{% endif %}
       <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">01</span> Propietario del inmueble</legend><p>Identificá a la persona propietaria del inmueble donde se instalará el GGER.</p><div class="alta-fields">
-        {% include 'public/includes/alta_field.html' with field=form.propietario_tipo wide=True %}
+        {% include 'public/includes/alta_field.html' with field=form.propietario_tipo %}
         {% include 'public/includes/alta_field.html' with field=form.propietario_nombre wide=True %}
         {% include 'public/includes/alta_field.html' with field=form.propietario_dni %}
         {% include 'public/includes/alta_field.html' with field=form.propietario_cuit %}
       </div></fieldset>
-      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">02</span> Titular del suministro</legend><p>Completá los datos de quien figura como titular del servicio de EDESA.</p><div class="alta-fields">
-        {% include 'public/includes/alta_field.html' with field=form.titular_tipo wide=True %}
+      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">02</span> Titular del suministro</legend><p>Completá los datos de quien figura como titular del servicio de EDESA.</p><label class="solicitud-copy"><input type="checkbox" id="copiar-propietario"><span><strong>Es la misma persona que el propietario</strong><small>Copiar y mantener actualizados sus datos.</small></span></label><div class="alta-fields">
+        {% include 'public/includes/alta_field.html' with field=form.titular_tipo %}
         {% include 'public/includes/alta_field.html' with field=form.titular_nombre wide=True %}
         {% include 'public/includes/alta_field.html' with field=form.titular_dni %}
         {% include 'public/includes/alta_field.html' with field=form.titular_cuit %}
@@ -38,12 +38,12 @@
       <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">04</span> Equipamiento GGER</legend><p>Características del equipo a conectar en paralelo con la red de EDESA.</p><div class="alta-fields">
         {% include 'public/includes/alta_field.html' with field=form.tecnologia %}
         {% include 'public/includes/alta_field.html' with field=form.tipo_conexion %}
-        {% include 'public/includes/alta_field.html' with field=form.potencia_inyectada_kw wide=True %}
-        {% include 'public/includes/alta_field.html' with field=form.coordenadas_pilar wide=True %}
+        {% include 'public/includes/alta_field.html' with field=form.potencia_inyectada_kw %}
+        {% include 'public/includes/alta_field.html' with field=form.coordenadas_pilar %}
       </div><p class="solicitud-maps-help">En Google Maps, seleccioná la ubicación del pilar y copiá su latitud y longitud. <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Abrir Google Maps ↗</a></p></fieldset>
-      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">05</span> Datos del solicitante</legend><p>Indicá quién realiza la presentación y dónde recibirá las notificaciones.</p><div class="alta-fields">
-        {% include 'public/includes/alta_field.html' with field=form.solicitante_condicion wide=True %}
-        {% include 'public/includes/alta_field.html' with field=form.solicitante_nombre wide=True %}
+      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">05</span> Datos del solicitante</legend><p>Indicá quién realiza la presentación y dónde recibirá las notificaciones.</p><label class="solicitud-copy" id="copiar-solicitante-label"><input type="checkbox" id="copiar-solicitante"><span><strong>Usar los datos del titular del suministro</strong><small>Completar el nombre y DNI del solicitante.</small></span></label><div class="alta-fields">
+        {% include 'public/includes/alta_field.html' with field=form.solicitante_condicion %}
+        {% include 'public/includes/alta_field.html' with field=form.solicitante_nombre %}
         {% include 'public/includes/alta_field.html' with field=form.solicitante_dni %}
         {% include 'public/includes/alta_field.html' with field=form.solicitante_celular %}
         {% include 'public/includes/alta_field.html' with field=form.solicitante_email wide=True %}
@@ -56,7 +56,7 @@
         <div class="alta-upload">{% include 'public/includes/alta_field.html' with field=form.poder_apoderado %}</div>
       </div></fieldset>
       <div class="solicitud-privacy">{% include 'ui/icon.html' with name='lock' %}<p>La aplicación procesa los datos y los archivos para enviarlos por correo a EDESA, sin guardar la presentación completa ni los adjuntos iniciales. Sólo se conserva el registro mínimo necesario para continuar el seguimiento.</p></div>
-      <div class="alta-submit"><p>Revisá la información y el correo para notificaciones antes de confirmar.</p><button class="btn primary" type="submit">Revisar y enviar a EDESA <span aria-hidden="true">→</span></button></div>
+      <div class="solicitud-validation" role="alert" hidden></div><div class="alta-submit"><p>Revisá la información y el correo para notificaciones antes de confirmar.</p><button class="btn primary" type="submit">Revisar y enviar a EDESA <span aria-hidden="true">→</span></button></div>
     </form>
   </div>
 </div>
