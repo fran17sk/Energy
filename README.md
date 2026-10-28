@@ -47,3 +47,7 @@ Los documentos se guardan en almacenamiento privado y se descargan con autorizac
 ## Reportes institucionales
 
 El menú **Reportes y estadísticas** permite analizar cantidades, tiempos de recepción y respuesta por organismo, evolución de altas y gestiones pendientes. Incluye filtros de fechas/organismo y exportación CSV. Ver [definiciones y alcance de los indicadores](docs/reportes.md).
+
+## Nueva solicitud de factibilidad
+
+El formulario se divide en propietario, titular del suministro, suministro, equipamiento GGER, solicitante y documentación. El envío completo y los adjuntos iniciales se remiten al correo configurado en `EDESA_SOLICITUD_EMAIL`. Se conserva únicamente un registro mínimo para seguimiento y notificaciones, con la verificación del DNI/CUIT protegida mediante hash. Ver [configuración y política de almacenamiento](docs/solicitud-factibilidad.md).

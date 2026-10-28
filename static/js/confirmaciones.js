@@ -2,6 +2,7 @@
   const descriptions = document.getElementById('confirmaciones-data');
   const actions = descriptions ? JSON.parse(descriptions.textContent) : {};
   const fallback = {
+    solicitud_email: { titulo: 'Enviar solicitud de factibilidad a EDESA', resultado: 'Se enviarán todos los datos y adjuntos al correo designado por EDESA. Se creará un código y un registro mínimo de seguimiento. La presentación completa y los adjuntos iniciales no se guardarán en la aplicación.' },
     alta: { titulo: 'Registrar solicitud de factibilidad', resultado: 'Se creará tu trámite en EDESA y se enviará el código de seguimiento al correo indicado. Guardá ese código para consultar el expediente.' },
     proyecto: { titulo: 'Enviar Proyecto Ejecutivo', resultado: 'Se incorporará el proyecto al expediente y EDESA tendrá una tarea pendiente de recepción y revisión.' },
     correo: { titulo: 'Reintentar notificación por correo', resultado: 'Se intentará enviar nuevamente esta notificación al titular. Si el servidor la acepta, se aplicará el avance que corresponda al trámite.' },
@@ -10,6 +11,25 @@
     const container = document.createElement('div');
     container.className = 'wf-confirm-summary';
     const intro = document.createElement('p'); intro.textContent = info.resultado; container.append(intro);
+    if (form.dataset.confirmKind === 'solicitud_email') {
+      for (const section of form.querySelectorAll('[data-solicitud-section]')) {
+        const title = document.createElement('h3'); title.className = 'wf-confirm-group-title';
+        const legend = section.querySelector('legend').cloneNode(true);
+        legend.querySelector('.alta-section-number')?.remove(); title.textContent = legend.textContent.trim();
+        container.append(title);
+        const list = document.createElement('dl');
+        for (const input of section.querySelectorAll('input, select')) {
+          if (input.disabled || input.type === 'hidden' || !input.name) continue;
+          const label = form.querySelector(`label[for="${input.id}"]`);
+          const value = input.type === 'file' ? [...input.files].map(file => file.name).join(', ') :
+            (input.tagName === 'SELECT' ? input.selectedOptions[0]?.textContent : input.value);
+          if (!value) continue;
+          const dt = document.createElement('dt'); dt.textContent = label?.childNodes[0]?.textContent.trim() || input.name;
+          const dd = document.createElement('dd'); dd.textContent = value; list.append(dt, dd);
+        }
+        container.append(list);
+      }
+    } else {
     const details = document.createElement('dl');
     const row = (label, value) => {
       if (!value) return;
@@ -21,7 +41,7 @@
     row('Etapa actual', form.dataset.etapa);
     row('Estado actual', form.dataset.estado);
     row('Organismo', form.dataset.organismo);
-    row('Correo del titular', form.dataset.destinatario);
+    row('Correo para notificaciones', form.dataset.destinatario);
     row('Usuario responsable', form.dataset.usuario);
     row('Notificación', form.dataset.asunto);
     for (const [name, label] of [['titular_nombre','Titular'], ['titular_email','Correo'], ['nis','NIS'], ['expediente','Expediente administrativo'], ['fecha','Fecha y hora (Salta)'], ['observacion','Detalle / indicaciones']]) {
@@ -37,6 +57,7 @@
       for (const file of input.files) row('Documento', file.name);
     }
     container.append(details);
+    }
     const note = document.createElement('p'); note.className = 'wf-confirm-note';
     note.textContent = form.dataset.usuario ? 'Esta actuación quedará registrada con tu usuario, organismo, fecha y hora.' : 'Revisá los datos y el documento antes de confirmar.';
     container.append(note);
@@ -71,7 +92,7 @@
       }
       sending = true;
       form.querySelectorAll('button[type="submit"]').forEach(button => {
-        button.disabled = true; button.textContent = 'Registrando…';
+        button.disabled = true; button.textContent = form.dataset.confirmKind === 'solicitud_email' ? 'Enviando…' : 'Registrando…';
       });
       HTMLFormElement.prototype.submit.call(form);
     });

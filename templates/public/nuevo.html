@@ -1,42 +1,64 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Iniciar trámite · GGER{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/alta.css' %}">{% endblock %}
+{% block title %}Solicitud de factibilidad · GGER{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/alta.css' %}"><link rel="stylesheet" href="{% static 'css/solicitud.css' %}">{% endblock %}
 {% block content %}
-<div class="alta-shell">
+<div class="alta-shell solicitud-shell">
   <a class="alta-back" href="{% url 'inicio' %}">← Volver al inicio</a>
-  <header class="alta-heading"><span class="eyebrow">Generación Distribuida · Salta</span><h1>El primer paso de tu trámite.</h1><p>Registrá tu solicitud y obtené un número único para seguir su recorrido, desde el ingreso hasta la conexión a la red.</p></header>
+  <header class="alta-heading"><span class="eyebrow">Generación Distribuida · Salta</span><h1>Solicitud de factibilidad.</h1><p>Completá los datos del inmueble, el suministro y el equipamiento. Enviaremos la solicitud y toda la documentación al correo designado por EDESA.</p></header>
   <div class="alta-layout">
-    <aside class="alta-aside" aria-label="Guía para iniciar el trámite">
-      <div class="alta-guide"><span class="eyebrow">Antes de empezar</span><h2>Tené a mano</h2><ul><li><span aria-hidden="true">✓</span> Tu factura de energía, con el NIS del suministro.</li><li><span aria-hidden="true">✓</span> Los datos y el documento del titular.</li><li><span aria-hidden="true">✓</span> La información técnica de tu proyecto.</li><li><span aria-hidden="true">✓</span> La solicitud de factibilidad para presentar a EDESA.</li></ul><div class="alta-guide-note">Al finalizar, guardá el número generado. Lo vas a necesitar para consultar el estado de tu solicitud.</div></div>
-      <a class="alta-existing" href="{% url 'tramite_consultar' %}"><strong>¿Ya registraste tu trámite?</strong><span>Consultá su estado <span aria-hidden="true">→</span></span></a>
+    <aside class="alta-aside" aria-label="Guía de la solicitud">
+      <div class="alta-guide"><span class="eyebrow">Antes de empezar</span><h2>Prepará tu presentación</h2><ul><li><span aria-hidden="true">✓</span> Datos del propietario y del titular del suministro.</li><li><span aria-hidden="true">✓</span> Factura de EDESA con NIS y potencia contratada.</li><li><span aria-hidden="true">✓</span> Datos del equipo y coordenadas del pilar de medición.</li><li><span aria-hidden="true">✓</span> Formulario digital y DNI del titular.</li><li><span aria-hidden="true">✓</span> Si actúa un apoderado, su DNI y el poder correspondiente.</li></ul><div class="alta-guide-note">Los datos y archivos se envían por correo a EDESA. La aplicación conserva sólo el código, NIS, correo de contacto, validación protegida del DNI/CUIT, estado y fechas para el seguimiento.</div></div>
+      <div class="solicitud-attachment-note"><strong>Adjuntos</strong><span>PDF, JPG o PNG · Hasta 5 MB por archivo y 15 MB en total.</span><p>Tené toda la documentación preparada antes de enviar: el formulario no guarda borradores.</p></div>
+      <a class="alta-existing" href="{% url 'tramite_consultar' %}"><strong>¿Ya tenés un código de trámite?</strong><span>Consultar su estado →</span></a>
     </aside>
-    <form method="post" enctype="multipart/form-data" class="alta-form" data-confirm-form data-confirm-kind="alta">
+    <form method="post" enctype="multipart/form-data" class="alta-form solicitud-form" data-solicitud-form data-confirm-form data-confirm-kind="solicitud_email" autocomplete="off">
       {% csrf_token %}
-      <div class="alta-form-intro"><span>Solicitud de seguimiento</span><small>Los campos con <span class="alta-required">*</span> son obligatorios.</small></div>
-      {% if form.errors %}<div class="alta-error-summary" role="alert" tabindex="-1"><strong>Revisá los datos antes de continuar.</strong><ul>{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% if form.solicitud_factibilidad.value %}<p>Por seguridad, volvé a seleccionar el archivo adjunto.</p>{% endif %}</div>{% endif %}
-      <fieldset class="alta-section"><legend><span class="alta-section-number">01</span> Datos del suministro</legend><p>Identificá el servicio donde se realizará la conexión.</p><div class="alta-fields">
+      <div class="alta-form-intro"><span>Presentación para EDESA</span><small>Los campos con <span class="alta-required">*</span> son obligatorios.</small></div>
+      {% if error_carga %}<div class="alta-error-summary" role="alert">{{ error_carga }}</div>{% endif %}
+      {% if form.errors %}<div class="alta-error-summary" role="alert" tabindex="-1"><strong>Revisá los datos antes de continuar.</strong><ul>{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul><p>Si adjuntaste documentos, volvé a seleccionarlos antes de enviar.</p></div>{% endif %}
+      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">01</span> Propietario del inmueble</legend><p>Identificá a la persona propietaria del inmueble donde se instalará el GGER.</p><div class="alta-fields">
+        {% include 'public/includes/alta_field.html' with field=form.propietario_tipo wide=True %}
+        {% include 'public/includes/alta_field.html' with field=form.propietario_nombre wide=True %}
+        {% include 'public/includes/alta_field.html' with field=form.propietario_dni %}
+        {% include 'public/includes/alta_field.html' with field=form.propietario_cuit %}
+      </div></fieldset>
+      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">02</span> Titular del suministro</legend><p>Completá los datos de quien figura como titular del servicio de EDESA.</p><div class="alta-fields">
+        {% include 'public/includes/alta_field.html' with field=form.titular_tipo wide=True %}
+        {% include 'public/includes/alta_field.html' with field=form.titular_nombre wide=True %}
+        {% include 'public/includes/alta_field.html' with field=form.titular_dni %}
+        {% include 'public/includes/alta_field.html' with field=form.titular_cuit %}
+      </div></fieldset>
+      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">03</span> Datos del suministro</legend><p>Usá la información de la factura de EDESA correspondiente al inmueble.</p><div class="alta-fields">
         {% include 'public/includes/alta_field.html' with field=form.nis %}
+        {% include 'public/includes/alta_field.html' with field=form.potencia_contratada_kw %}
         {% include 'public/includes/alta_field.html' with field=form.catastro %}
         {% include 'public/includes/alta_field.html' with field=form.departamento %}
-        {% include 'public/includes/alta_field.html' with field=form.potencia_contratada_kw %}
       </div></fieldset>
-      <fieldset class="alta-section"><legend><span class="alta-section-number">02</span> Datos del titular</legend><p>Ingresá la información de la persona o entidad responsable.</p><div class="alta-fields">
-        {% include 'public/includes/alta_field.html' with field=form.titular_nombre wide=True %}
-        {% include 'public/includes/alta_field.html' with field=form.titular_dni_cuit %}
-        {% include 'public/includes/alta_field.html' with field=form.titular_telefono %}
-        {% include 'public/includes/alta_field.html' with field=form.titular_email wide=True %}
-      </div></fieldset>
-      <fieldset class="alta-section"><legend><span class="alta-section-number">03</span> Información del proyecto</legend><p>Completá los datos técnicos que tengas disponibles.</p><div class="alta-fields">
+      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">04</span> Equipamiento GGER</legend><p>Características del equipo a conectar en paralelo con la red de EDESA.</p><div class="alta-fields">
         {% include 'public/includes/alta_field.html' with field=form.tecnologia %}
         {% include 'public/includes/alta_field.html' with field=form.tipo_conexion %}
-        {% include 'public/includes/alta_field.html' with field=form.modalidad_conexion %}
-        {% include 'public/includes/alta_field.html' with field=form.potencia_inyectada_kw %}
+        {% include 'public/includes/alta_field.html' with field=form.potencia_inyectada_kw wide=True %}
         {% include 'public/includes/alta_field.html' with field=form.coordenadas_pilar wide=True %}
+      </div><p class="solicitud-maps-help">En Google Maps, seleccioná la ubicación del pilar y copiá su latitud y longitud. <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Abrir Google Maps ↗</a></p></fieldset>
+      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">05</span> Datos del solicitante</legend><p>Indicá quién realiza la presentación y dónde recibirá las notificaciones.</p><div class="alta-fields">
+        {% include 'public/includes/alta_field.html' with field=form.solicitante_condicion wide=True %}
+        {% include 'public/includes/alta_field.html' with field=form.solicitante_nombre wide=True %}
+        {% include 'public/includes/alta_field.html' with field=form.solicitante_dni %}
+        {% include 'public/includes/alta_field.html' with field=form.solicitante_celular %}
+        {% include 'public/includes/alta_field.html' with field=form.solicitante_email wide=True %}
       </div></fieldset>
-      <fieldset class="alta-section"><legend><span class="alta-section-number">04</span> Documentación</legend><p>Adjuntá la solicitud de factibilidad que recibirá EDESA. PDF, JPG o PNG, hasta 10 MB.</p><div class="alta-upload"><span class="alta-upload-icon" aria-hidden="true">↑</span>{% include 'public/includes/alta_field.html' with field=form.solicitud_factibilidad %}</div></fieldset>
-      <div class="alta-submit"><p>Verificá que los datos sean correctos antes de registrar tu solicitud.</p><button class="btn primary" type="submit">Registrar trámite <span aria-hidden="true">→</span></button></div>
+      <fieldset class="alta-section" data-solicitud-section><legend><span class="alta-section-number">06</span> Documentación adjunta</legend><p>PDF, JPG o PNG. Hasta 5 MB por archivo y 15 MB entre todos los adjuntos.</p><div class="solicitud-uploads">
+        <div class="alta-upload">{% include 'public/includes/alta_field.html' with field=form.formulario_digital %}</div>
+        <div class="alta-upload">{% include 'public/includes/alta_field.html' with field=form.dni_titular %}</div>
+        <p class="solicitud-doc-help">Si el titular es una persona jurídica, adjuntá el DNI de su representante.</p>
+        <div class="alta-upload">{% include 'public/includes/alta_field.html' with field=form.dni_apoderado %}</div>
+        <div class="alta-upload">{% include 'public/includes/alta_field.html' with field=form.poder_apoderado %}</div>
+      </div></fieldset>
+      <div class="solicitud-privacy">{% include 'ui/icon.html' with name='lock' %}<p>La aplicación procesa los datos y los archivos para enviarlos por correo a EDESA, sin guardar la presentación completa ni los adjuntos iniciales. Sólo se conserva el registro mínimo necesario para continuar el seguimiento.</p></div>
+      <div class="alta-submit"><p>Revisá la información y el correo para notificaciones antes de confirmar.</p><button class="btn primary" type="submit">Revisar y enviar a EDESA <span aria-hidden="true">→</span></button></div>
     </form>
   </div>
 </div>
 {% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/solicitud.js' %}" defer></script>{% endblock %}

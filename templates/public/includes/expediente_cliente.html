@@ -1,4 +1,5 @@
 <div class="expediente-panel">
+  {% if resultado.presentacion_por_correo %}<p>La presentación inicial y sus adjuntos fueron enviados al correo de EDESA. Aquí se muestran el seguimiento y los documentos incorporados en las etapas posteriores.</p>{% endif %}
   {% if resultado.expediente_administrativo %}<p><strong>Expediente administrativo:</strong> {{ resultado.expediente_administrativo }}</p>{% endif %}
   {% if resultado.inspeccion_programada %}<p><strong>Inspección programada:</strong> {{ resultado.inspeccion_programada|date:'d/m/Y H:i' }}</p>{% endif %}
   {% if resultado.conexion_realizada %}<p><strong>Conexión registrada:</strong> {{ resultado.conexion_realizada|date:'d/m/Y H:i' }} · Trámite finalizado</p>{% endif %}

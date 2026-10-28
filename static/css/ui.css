@@ -37,3 +37,5 @@ html:not(.js) .ui-theme-toggle,html:not(.js) .ui-collapse{display:none}
 
 .ui-public .ui-brand-text{display:block}
 @media(max-width:1023px){.ui-workspace{transition:none}}
+
+.wf-confirm-group-title{font-size:13px;font-weight:700;color:var(--ui-text);margin:22px 0 10px}

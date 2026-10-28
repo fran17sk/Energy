@@ -89,3 +89,6 @@ PRIVATE_MEDIA_ROOT = Path(env("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "priv
 
 FILE_UPLOAD_PERMISSIONS = 0o600
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o700
+
+# Receptor específico de solicitudes nuevas; no se infiere del remitente SMTP.
+EDESA_SOLICITUD_EMAIL = env('EDESA_SOLICITUD_EMAIL', default='')

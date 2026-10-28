@@ -141,7 +141,7 @@ def construir_reporte(desde, hasta, organismo=None, ahora=None):
                 fila['sin_datos'] += int(incompleto)
             if recepcion_pendiente or respuesta_pendiente:
                 inicio_espera = llegada if recepcion_pendiente else recibido
-                pendientes.append({'pk': tramite.pk, 'titular': tramite.titular_nombre,
+                pendientes.append({'pk': tramite.pk, 'titular': tramite.titular_display,
                     'organismo': sigla, 'instancia': nombre,
                     'tipo': 'Por recibir' if recepcion_pendiente else 'Por responder',
                     'espera': (ahora - inicio_espera).total_seconds(), 'desde': inicio_espera})

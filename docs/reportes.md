@@ -37,3 +37,5 @@ La descarga es institucional, no se almacena en caché y no incluye códigos de 
 ## Validación
 
 `python manage.py test apps.reportes` comprueba promedios ponderados, medianas, múltiples intervenciones de EDESA, exclusión de esperas del cliente, fechas faltantes o futuras, fronteras de fecha local, permisos, filtros, exportación y consultas SQL sin crecimiento por cada trámite.
+
+Las nuevas presentaciones con registro mínimo se incluyen en los recuentos y tiempos. Como no almacenan el nombre del titular, se identifican en los pendientes mediante su NIS; sus datos técnicos y documentos iniciales sólo se remiten por correo a EDESA.

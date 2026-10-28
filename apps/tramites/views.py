@@ -1,16 +1,21 @@
 import hashlib
 import time
+import logging
+from django.core import signing
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
-from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
+from django.core.exceptions import PermissionDenied, ValidationError, RequestDataTooBig, TooManyFilesSent, TooManyFieldsSent
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
-from .forms import TramitePublicoForm, ConsultaTramiteForm, DocumentoForm, AccionTramiteForm
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from .forms import ConsultaTramiteForm, DocumentoForm, AccionTramiteForm
+from .solicitud_forms import SolicitudFactibilidadForm
+from .solicitud_uploads import SolicitudMemoryUploadHandler
+from .solicitud_email import registrar_y_enviar_solicitud
 from .models import Tramite, DocumentoTramite
 from . import services
 from apps.workflow.models import Etapa
@@ -20,18 +25,57 @@ def inicio(request):
     return render(request, 'public/inicio.html')
 
 
+@csrf_exempt
 @never_cache
 def nuevo(request):
+    # Instalar antes de que CSRF lea request.POST: no hay upload handler temporal.
+    request.upload_handlers = [SolicitudMemoryUploadHandler(request)]
+    try:
+        return _nuevo_protegido(request)
+    except (RequestDataTooBig, TooManyFilesSent, TooManyFieldsSent):
+        form = SolicitudFactibilidadForm()
+        return render(request, 'public/nuevo.html', {
+            'form': form, 'error_carga': 'La carga supera los límites permitidos. Adjuntá archivos de hasta 5 MB y 15 MB en total.',
+        }, status=413)
+
+
+@csrf_protect
+def _nuevo_protegido(request):
     if request.method == 'POST':
-        form = TramitePublicoForm(request.POST, request.FILES)
+        post = request.POST
+        error_carga = getattr(request, 'solicitud_upload_error', None)
+        form = SolicitudFactibilidadForm(post, {} if error_carga else request.FILES)
+        if error_carga:
+            form.add_error(None, error_carga)
         if form.is_valid():
-            with transaction.atomic():
-                tramite = form.save()
-                services.iniciar(tramite)
-            return render(request, 'public/alta_ok.html', {'tramite': tramite})
+            try:
+                tramite = registrar_y_enviar_solicitud(form.cleaned_data)
+            except Exception as exc:
+                # Nunca registrar datos, adjuntos, dirección del solicitante ni detalles SMTP.
+                logging.getLogger(__name__).warning('Solicitud no enviada (%s); no se conservan datos de la presentación para reintento.', type(exc).__name__)
+                form.add_error(None, 'No se pudo enviar la solicitud a EDESA. No se creó el trámite ni se guardaron los documentos. '
+                    'Conservá los archivos, volvé a seleccionarlos e intentá nuevamente más tarde.')
+            else:
+                response = redirect('solicitud_enviada')
+                response.status_code = 303
+                response.set_signed_cookie('solicitud_enviada', str(tramite.pk), salt='solicitud-enviada',
+                    max_age=600, httponly=True, samesite='Lax', secure=request.is_secure())
+                return response
     else:
-        form = TramitePublicoForm()
+        form = SolicitudFactibilidadForm()
     return render(request, 'public/nuevo.html', {'form': form})
+
+
+@never_cache
+def solicitud_enviada(request):
+    try:
+        pk = int(request.get_signed_cookie('solicitud_enviada', salt='solicitud-enviada', max_age=600))
+    except (KeyError, signing.BadSignature, ValueError, TypeError):
+        return redirect('tramite_nuevo')
+    tramite = get_object_or_404(Tramite, pk=pk, presentacion_por_correo=True)
+    response = render(request, 'public/solicitud_enviada.html', {'tramite': tramite})
+    response['Referrer-Policy'] = 'no-referrer'
+    return response
 
 
 def acceso_cliente(request, pk):
@@ -74,8 +118,10 @@ def consultar(request):
         if form.is_valid():
             cd = form.cleaned_data
             resultado = Tramite.objects.filter(
-                numero__iexact=cd['numero'], nis=cd['nis'], titular_dni_cuit=cd['dni_cuit'],
+                numero__iexact=cd['numero'], nis=cd['nis'],
             ).select_related('etapa_actual', 'organismo_actual').first()
+            if resultado and not resultado.verificar_documento_consulta(cd['dni_cuit']):
+                resultado = None
             if resultado:
                 request.session['consulta_tramite'] = {'id': resultado.pk, 'hasta': time.time() + 1800}
             else:

@@ -28,7 +28,7 @@ def enviar(pk):
             try:
                 email = EmailMessage(
                     subject=f'GGER · {notificacion.asunto}',
-                    body=(f'Hola {notificacion.tramite.titular_nombre},\n\n{notificacion.mensaje}\n\n'
+                    body=((f'Hola {notificacion.tramite.titular_nombre},' if notificacion.tramite.titular_nombre else 'Hola,') + f'\n\n{notificacion.mensaje}\n\n'
                           f'Número de trámite: {notificacion.tramite.numero}\n'
                           'Guardá este código en un lugar seguro y no lo compartas. '
                           'Para consultar ingresá al sitio GGER con este código, tu NIS y el DNI / CUIT del titular.\n'),

@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Solicitud enviada a EDESA · GGER{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/alta.css' %}">{% endblock %}
+{% block content %}
+<div class="alta-shell"><section class="alta-success" aria-labelledby="solicitud-success-title"><span class="alta-success-icon" aria-hidden="true">✓</span><span class="eyebrow">Presentación remitida</span><h1 id="solicitud-success-title">Tu solicitud fue enviada a EDESA.</h1><p>El servidor de correo aceptó el envío de la información y todos los adjuntos iniciales a la dirección designada por EDESA.</p><div class="alta-number"><small>Guardá tu código de seguimiento</small><strong>{{ tramite.numero }}</strong></div><p>Para consultar el estado y continuar el trámite necesitás este código, el NIS y el DNI o CUIT del titular del suministro. También se registró el envío del código al correo del solicitante.</p><p>La aplicación conserva sólo el registro mínimo de seguimiento. Los datos completos de la presentación y los adjuntos iniciales se remitieron por correo y no se guardaron como documentos en el servidor.</p><a class="btn primary" href="{% url 'tramite_consultar' %}">Consultar mi trámite →</a><a class="alta-back" href="{% url 'inicio' %}">Volver al inicio</a></section></div>
+{% endblock %}

@@ -33,14 +33,13 @@ class CircuitoTests(TestCase):
             self.users[sigla] = get_user_model().objects.create_user(
                 username=sigla, organismo=Organismo.objects.get(sigla=sigla), rol='OPER')
         self.cliente = Client()
+        # Los expedientes anteriores continúan su circuito aunque las nuevas altas sean sólo por correo.
         with self.captureOnCommitCallbacks(execute=True):
-            response = self.cliente.post('/tramites/nuevo/', {
-                'nis': '123456', 'titular_nombre': 'Cliente de prueba',
-                'titular_dni_cuit': '20301234567', 'titular_email': 'cliente@example.com',
-                'solicitud_factibilidad': self.pdf(),
-            })
-        self.assertEqual(response.status_code, 200)
-        self.t = Tramite.objects.get()
+            self.t = Tramite.objects.create(nis='123456', titular_nombre='Cliente de prueba',
+                titular_dni_cuit='20301234567', titular_email='cliente@example.com',
+                solicitud_factibilidad=self.pdf())
+            services.iniciar(self.t)
+        self.t.refresh_from_db()
 
     def pdf(self):
         return SimpleUploadedFile('documento.pdf', b'%PDF-1.4\ncontenido de prueba', content_type='application/pdf')

@@ -3,6 +3,9 @@ from django.utils import timezone
 import secrets
 import uuid
 import os
+import re
+from django.contrib.auth.hashers import check_password
+from django.utils.crypto import constant_time_compare
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
@@ -25,6 +28,8 @@ class Tramite(models.Model):
     numero = models.CharField(max_length=64, unique=True, editable=False)
     creado_en = models.DateTimeField(default=timezone.now, editable=False)
     actualizado_en = models.DateTimeField(auto_now=True)
+    presentacion_por_correo = models.BooleanField(default=False)
+    consulta_documento_hash = models.CharField(max_length=128, blank=True, editable=False)
 
     # Datos del suministro
     nis = models.CharField(max_length=40, db_index=True)
@@ -73,6 +78,16 @@ class Tramite(models.Model):
             models.Index(fields=['titular_dni_cuit']),
             models.Index(fields=['organismo_actual', 'estado_actual']),
         ]
+
+    @property
+    def titular_display(self):
+        return self.titular_nombre or f'Suministro NIS {self.nis}'
+
+    def verificar_documento_consulta(self, documento):
+        if self.consulta_documento_hash:
+            normalizado = re.sub(r'[.\s-]', '', documento)
+            return check_password(normalizado, self.consulta_documento_hash)
+        return constant_time_compare(self.titular_dni_cuit, documento)
 
     def __str__(self):
         return self.numero
