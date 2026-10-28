@@ -5,15 +5,15 @@
 {% block content %}
 <div class="alta-shell solicitud-shell">
   <a class="alta-back" href="{% url 'inicio' %}">← Volver al inicio</a>
-  <header class="alta-heading"><span class="eyebrow">Generación Distribuida · Salta</span><h1>Solicitud de factibilidad.</h1><p>Completá los datos del inmueble, el suministro y el equipamiento. Enviaremos la solicitud y toda la documentación al correo designado por EDESA.</p></header>
-  <div class="alta-layout">
+  <header class="alta-heading"><span class="eyebrow">Generación Distribuida · Salta</span><h1>{% if es_subsanacion %}Corregí tu solicitud.{% else %}Solicitud de factibilidad.{% endif %}</h1><p>Completá los datos del inmueble, el suministro y el equipamiento. Enviaremos la solicitud y toda la documentación al correo designado por EDESA.</p></header>
+  {% if es_subsanacion %}<div class="alta-error-summary" role="status"><strong>Observación de EDESA · {{ observacion.creada_en|date:'d/m/Y H:i' }}</strong><p>{{ observacion.detalle|linebreaksbr }}</p><p>Corregí los datos necesarios. Adjuntá únicamente los archivos a reemplazar: EDESA conserva los anteriores en su correo. Si cambiás el NIS o DNI/CUIT, usá los nuevos datos en futuras consultas.</p></div>{% endif %}<div class="alta-layout">
     <aside class="alta-aside" aria-label="Guía de la solicitud">
       <div class="alta-guide"><span class="eyebrow">Antes de empezar</span><h2>Prepará tu presentación</h2><ul><li><span aria-hidden="true">✓</span> Datos del propietario y del titular del suministro.</li><li><span aria-hidden="true">✓</span> Factura de EDESA con NIS y potencia contratada.</li><li><span aria-hidden="true">✓</span> Datos del equipo y coordenadas del pilar de medición.</li><li><span aria-hidden="true">✓</span> Formulario digital y DNI del titular.</li><li><span aria-hidden="true">✓</span> Si actúa un apoderado, su DNI y el poder correspondiente.</li></ul><div class="alta-guide-note">Los datos del formulario se guardan en el expediente. Los adjuntos iniciales se envían únicamente por correo a EDESA y no se almacenan en el servidor.</div></div>
       <div class="solicitud-attachment-note"><strong>Adjuntos</strong><span>PDF, JPG o PNG · Hasta 5 MB por archivo y 15 MB en total.</span><p>Tené toda la documentación preparada antes de enviar: el formulario no guarda borradores.</p></div>
       <a class="alta-existing" href="{% url 'tramite_consultar' %}"><strong>¿Ya tenés un código de trámite?</strong><span>Consultar su estado →</span></a>
     </aside>
-    <form method="post" enctype="multipart/form-data" class="alta-form solicitud-form" data-solicitud-form data-confirm-form data-confirm-kind="solicitud_email" autocomplete="on">
-      {% csrf_token %}
+    <form method="post" enctype="multipart/form-data" class="alta-form solicitud-form" data-solicitud-form {% if es_subsanacion %}data-subsanacion="true"{% endif %} data-confirm-form data-confirm-kind="{% if es_subsanacion %}subsanacion{% else %}solicitud_email{% endif %}" autocomplete="on">
+      {% csrf_token %}{{ form.observacion_id }}
       <div class="alta-form-intro"><span>Presentación para EDESA</span><small>Los campos con <span class="alta-required">*</span> son obligatorios.</small></div>
       {% if error_carga %}<div class="alta-error-summary" role="alert">{{ error_carga }}</div>{% endif %}
       {% if form.errors %}<div class="alta-error-summary" role="alert" tabindex="-1"><strong>Revisá los datos antes de continuar.</strong><ul>{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul><p>Si adjuntaste documentos, volvé a seleccionarlos antes de enviar.</p></div>{% endif %}
@@ -56,7 +56,7 @@
         <div class="alta-upload">{% include 'public/includes/alta_field.html' with field=form.poder_apoderado %}</div>
       </div></fieldset>
       <div class="solicitud-privacy">{% include 'ui/icon.html' with name='lock' %}<p>Todos los datos del formulario se guardan para gestionar el trámite. La documentación adjunta inicial se envía al correo de EDESA y no se guarda en el servidor.</p></div>
-      <div class="solicitud-validation" role="alert" hidden></div><div class="alta-submit"><p>Revisá la información y el correo para notificaciones antes de confirmar.</p><button class="btn primary" type="submit">Revisar y enviar a EDESA <span aria-hidden="true">→</span></button></div>
+      <div class="solicitud-validation" role="alert" hidden></div><div class="alta-submit"><p>Revisá la información y el correo para notificaciones antes de confirmar.</p><button class="btn primary" type="submit">{% if es_subsanacion %}Revisar y enviar correcciones{% else %}Revisar y enviar a EDESA{% endif %} <span aria-hidden="true">→</span></button></div>
     </form>
   </div>
 </div>

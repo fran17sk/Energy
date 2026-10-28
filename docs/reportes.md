@@ -39,3 +39,5 @@ La descarga es institucional, no se almacena en caché y no incluye códigos de 
 `python manage.py test apps.reportes` comprueba promedios ponderados, medianas, múltiples intervenciones de EDESA, exclusión de esperas del cliente, fechas faltantes o futuras, fronteras de fecha local, permisos, filtros, exportación y consultas SQL sin crecimiento por cada trámite.
 
 Las nuevas presentaciones conservan sus datos y se identifican por el nombre del titular. Los registros históricos mínimos siguen incluidos en recuentos y tiempos, identificados mediante su NIS. Los adjuntos iniciales sólo se remiten por correo a EDESA.
+
+Las solicitudes observadas no se cuentan como respuestas pendientes del organismo mientras esperan al interesado. En factibilidad se descuentan los intervalos entre observación y subsanación del tiempo de respuesta y de la antigüedad de los pendientes, según la auditoría.

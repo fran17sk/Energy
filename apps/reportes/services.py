@@ -26,6 +26,22 @@ def _intervalo(inicio, fin, ahora):
     return (fin - inicio).total_seconds()
 
 
+def _espera_subsanacion(eventos, inicio, fin):
+    if inicio is None or fin is None:
+        return 0
+    abierta = None
+    segundos = 0
+    for evento in eventos:
+        if evento.accion == 'SOLICITUD_OBSERVADA' and abierta is None:
+            abierta = evento.creado_en
+        elif evento.accion == 'SOLICITUD_SUBSANADA' and abierta is not None:
+            segundos += max(0, (min(fin, evento.creado_en) - max(inicio, abierta)).total_seconds())
+            abierta = None
+    if abierta is not None:
+        segundos += max(0, (fin - max(inicio, abierta)).total_seconds())
+    return segundos
+
+
 def _resumen(tiempos):
     return {'promedio': fmean(tiempos) if tiempos else None,
             'mediana': median(tiempos) if tiempos else None, 'muestras': len(tiempos)}
@@ -70,7 +86,7 @@ def construir_reporte(desde, hasta, organismo=None, ahora=None):
         qs = qs.filter(Q(organismo_actual=organismo) | Q(etapas_historial__etapa__organismo=organismo)).distinct()
     qs = qs.select_related('organismo_actual', 'etapa_actual').prefetch_related(
         Prefetch('etapas_historial', queryset=TramiteEtapa.objects.select_related('etapa'), to_attr='report_historial'),
-        Prefetch('auditorias', queryset=Auditoria.objects.filter(accion__in=['RECIBIDO', 'PROYECTO_ENVIADO']).order_by('creado_en', 'pk'), to_attr='report_eventos'),
+        Prefetch('auditorias', queryset=Auditoria.objects.filter(accion__in=['RECIBIDO', 'PROYECTO_ENVIADO', 'SOLICITUD_OBSERVADA', 'SOLICITUD_SUBSANADA']).order_by('creado_en', 'pk'), to_attr='report_eventos'),
         Prefetch('documentos', queryset=DocumentoTramite.objects.filter(tipo='PROYECTO'), to_attr='report_proyectos'),
     )
     organismos = list(Organismo.objects.order_by('sigla'))
@@ -119,11 +135,13 @@ def construir_reporte(desde, hasta, organismo=None, ahora=None):
                 recibido = min(recepciones, default=None)
             tr = _intervalo(llegada, recibido, ahora)
             ts = _intervalo(recibido, respuesta, ahora)
+            if clave == 'factibilidad' and ts is not None:
+                ts = max(0, ts - _espera_subsanacion(tramite.report_eventos, recibido, respuesta))
             activa = tramite.estado_actual != 'FINALIZADO' and actual in {entrada, salida}
             recepcion_pendiente = (activa and actual == entrada and recibido is None and respuesta is None
                 and llegada is not None and llegada <= ahora
                 and (clave != 'contrato' or tramite.estado_actual == 'PENDIENTE'))
-            respuesta_pendiente = activa and recibido is not None and recibido <= ahora and respuesta is None
+            respuesta_pendiente = activa and tramite.estado_actual != 'OBSERVADO' and recibido is not None and recibido <= ahora and respuesta is None
             recepcion_esperada = (actual == salida and entrada != salida) or (
                 clave == 'contrato' and actual == entrada and tramite.estado_actual != 'PENDIENTE')
             incompleto = any((llegada is None, llegada is not None and llegada > ahora,
@@ -144,7 +162,7 @@ def construir_reporte(desde, hasta, organismo=None, ahora=None):
                 pendientes.append({'pk': tramite.pk, 'titular': tramite.titular_display,
                     'organismo': sigla, 'instancia': nombre,
                     'tipo': 'Por recibir' if recepcion_pendiente else 'Por responder',
-                    'espera': (ahora - inicio_espera).total_seconds(), 'desde': inicio_espera})
+                    'espera': max(0, (ahora - inicio_espera).total_seconds() - (_espera_subsanacion(tramite.report_eventos, inicio_espera, ahora) if clave == 'factibilidad' else 0)), 'desde': inicio_espera})
     recepcion_global = _resumen([t for f in por_organismo.values() for t in f['recepcion_tiempos']])
     respuesta_global = _resumen([t for f in por_organismo.values() for t in f['respuesta_tiempos']])
     filas = [_cerrar_fila(f) for f in por_organismo.values()]

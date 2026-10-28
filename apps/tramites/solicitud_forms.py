@@ -39,6 +39,7 @@ def adjunto(label, required=True):
 
 
 class SolicitudFactibilidadForm(forms.Form):
+    requiere_adjuntos_apoderado = True
     propietario_tipo = forms.ChoiceField(label='Tipo de persona', choices=PERSONAS, initial='HUMANA')
     propietario_nombre = forms.CharField(label='Nombre completo / Razón social', max_length=180)
     propietario_dni = forms.CharField(label='DNI del propietario', max_length=15, required=False)
@@ -125,7 +126,7 @@ class SolicitudFactibilidadForm(forms.Form):
             data[f'{persona}_{inactivo}'] = ''
         if data.get('solicitante_condicion') == 'APODERADO':
             for field in ['dni_apoderado', 'poder_apoderado']:
-                if not data.get(field):
+                if self.requiere_adjuntos_apoderado and not data.get(field):
                     self.add_error(field, 'Este documento es obligatorio cuando interviene un apoderado.')
         else:
             data['dni_apoderado'] = data['poder_apoderado'] = None

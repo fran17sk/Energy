@@ -68,13 +68,13 @@ def validar_configuracion_envio():
     return destino
 
 
-def enviar_solicitud(data, numero):
+def enviar_solicitud(data, numero, subsanacion=None):
     destino = validar_configuracion_envio()
     contexto = {'secciones': secciones_solicitud(data),
         'documentos': [nombre for campo, nombre in ADJUNTOS if data.get(campo)],
-        'contacto': data['solicitante_email'], 'numero': numero}
+        'contacto': data['solicitante_email'], 'numero': numero, 'subsanacion': subsanacion}
     mensaje = EmailMultiAlternatives(
-        subject='Solicitud de factibilidad GGER',
+        subject='GGER · Subsanación de solicitud · requiere atención' if subsanacion else 'Solicitud de factibilidad GGER',
         body=render_to_string('email/solicitud_factibilidad.txt', contexto),
         from_email=settings.DEFAULT_FROM_EMAIL, to=[destino], reply_to=[data['solicitante_email']],
     )
@@ -94,6 +94,14 @@ def enviar_solicitud(data, numero):
 def registrar_y_enviar_solicitud(data):
     from .models import Tramite
     from .services import iniciar
+    campos = datos_para_tramite(data)
+    tramite = Tramite.objects.create(**campos, presentacion_por_correo=True)
+    enviar_solicitud(data, tramite.numero)
+    iniciar(tramite)
+    return tramite
+
+
+def datos_para_tramite(data):
     documento = data['titular_dni'] if data['titular_tipo'] == 'HUMANA' else data['titular_cuit']
     campos = {nombre: data[nombre] for nombre in (
         'propietario_tipo', 'propietario_nombre', 'propietario_dni', 'propietario_cuit',
@@ -101,9 +109,6 @@ def registrar_y_enviar_solicitud(data):
         'potencia_contratada_kw', 'tecnologia', 'tipo_conexion', 'potencia_inyectada_kw',
         'coordenadas_pilar', 'solicitante_condicion', 'solicitante_nombre',
         'solicitante_dni', 'solicitante_celular')}
-    tramite = Tramite.objects.create(**campos, titular_email=data['solicitante_email'],
-        titular_dni_cuit=documento, titular_telefono=data['solicitante_celular'],
-        presentacion_por_correo=True, consulta_documento_hash=make_password(documento))
-    enviar_solicitud(data, tramite.numero)
-    iniciar(tramite)
-    return tramite
+    campos.update(titular_email=data['solicitante_email'], titular_dni_cuit=documento,
+                  titular_telefono=data['solicitante_celular'], consulta_documento_hash=make_password(documento))
+    return campos

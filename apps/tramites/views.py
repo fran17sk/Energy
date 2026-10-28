@@ -18,6 +18,7 @@ from .solicitud_uploads import SolicitudMemoryUploadHandler
 from .solicitud_email import registrar_y_enviar_solicitud, error_publico_envio
 from .models import Tramite, DocumentoTramite
 from . import services
+from . import observaciones
 from apps.workflow.models import Etapa
 
 
@@ -178,7 +179,7 @@ def dashboard(request):
     exigir_institucional(request)
     qs = Tramite.objects.select_related('etapa_actual', 'organismo_actual')
     tareas = qs.filter(organismo_actual_id=request.user.organismo_id).exclude(
-        estado_actual__in=['FINALIZADO', 'PENDIENTE_CLIENTE'])
+        estado_actual__in=['FINALIZADO', 'PENDIENTE_CLIENTE', 'OBSERVADO'])
     return render(request, 'institutional/dashboard.html', {
         'total': qs.count(), 'pendientes': tareas.count(),
         'conectados': qs.filter(estado_actual='FINALIZADO').count(),
@@ -195,7 +196,7 @@ def lista(request):
     if q:
         qs = qs.filter(Q(numero__icontains=q) | Q(nis__icontains=q) | Q(titular_nombre__icontains=q) | Q(titular_dni_cuit__icontains=q))
     if request.GET.get('mias'):
-        qs = qs.filter(organismo_actual_id=request.user.organismo_id).exclude(estado_actual__in=['FINALIZADO', 'PENDIENTE_CLIENTE'])
+        qs = qs.filter(organismo_actual_id=request.user.organismo_id).exclude(estado_actual__in=['FINALIZADO', 'PENDIENTE_CLIENTE', 'OBSERVADO'])
     return render(request, 'institutional/tramites.html', {'tramites': qs, 'q': q})
 
 
@@ -231,6 +232,8 @@ def detalle(request, pk):
         'confirmaciones': {codigo: services.resumen_actuacion(tramite, codigo) for codigo, _ in acciones},
         'accion_info': services.resumen_actuacion(tramite, acciones[0][0]) if acciones else None,
         'requiere_recepcion': puede and services.requiere_recepcion(tramite),
+        'puede_observar': observaciones.puede_observar(request.user, tramite),
+        'observacion_form': observaciones.ObservacionForm(),
     })
 
 
@@ -248,3 +251,61 @@ def reintentar_correo(request, pk):
     else:
         messages.error(request, 'No se pudo enviar el correo. Revisá la configuración SMTP; el envío sigue disponible para reintento.')
     return redirect('institucional_tramite_detalle', pk=notificacion.tramite_id)
+
+
+@login_required
+@require_POST
+def observar_solicitud(request, pk):
+    exigir_institucional(request)
+    form = observaciones.ObservacionForm(request.POST)
+    if form.is_valid():
+        observaciones.observar(pk, request.user, form.cleaned_data['detalle'])
+        messages.success(request, 'Observación registrada. Se notificó al solicitante; podés verificar el estado del correo en el expediente.')
+    else:
+        messages.error(request, 'Ingresá una observación de entre 1 y 2000 caracteres.')
+    return redirect('institucional_tramite_detalle', pk=pk)
+
+
+@csrf_exempt
+@never_cache
+def corregir_solicitud(request, pk):
+    if not acceso_cliente(request, pk):
+        raise PermissionDenied('Consultá primero con número de trámite, NIS y DNI/CUIT del titular.')
+    request.upload_handlers = [SolicitudMemoryUploadHandler(request)]
+    try:
+        return _corregir_protegido(request, pk)
+    except (RequestDataTooBig, TooManyFilesSent, TooManyFieldsSent):
+        return HttpResponse('La carga supera el límite permitido. Usá archivos de hasta 5 MB y 15 MB en total.', status=413)
+
+
+@csrf_protect
+def _corregir_protegido(request, pk):
+    tramite = get_object_or_404(Tramite.objects.select_related('etapa_actual', 'organismo_actual'), pk=pk)
+    observacion = tramite.observaciones_solicitud.filter(subsanada_en__isnull=True).first()
+    if tramite.estado_actual != Tramite.Estado.OBSERVADO or not observacion:
+        messages.info(request, 'El trámite no tiene una corrección pendiente.')
+        return redirect('/tramites/consultar/?vista=1')
+    inicial = {nombre: getattr(tramite, nombre, '') for nombre in observaciones.SubsanacionForm.base_fields}
+    inicial.update(titular_dni=tramite.titular_dni_cuit if tramite.titular_tipo != 'JURIDICA' else '',
+        titular_cuit=tramite.titular_dni_cuit if tramite.titular_tipo == 'JURIDICA' else '',
+        propietario_tipo=tramite.propietario_tipo or 'HUMANA', titular_tipo=tramite.titular_tipo or 'HUMANA',
+        solicitante_condicion=tramite.solicitante_condicion or 'TITULAR',
+        solicitante_email=tramite.titular_email, observacion_id=observacion.pk)
+    form = observaciones.SubsanacionForm(request.POST if request.method == 'POST' else None,
+        request.FILES if request.method == 'POST' else None, initial=inicial)
+    error_carga = getattr(request, 'solicitud_upload_error', None)
+    if error_carga:
+        form.add_error(None, error_carga)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            tramite = observaciones.subsanar(pk, form.cleaned_data)
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        except Exception as exc:
+            logging.getLogger(__name__).warning('Subsanación no enviada (%s).', type(exc).__name__)
+            form.add_error(None, error_publico_envio(exc) + ' No se aplicaron las correcciones. Volvé a seleccionar los archivos para reintentar.')
+        else:
+            messages.success(request, 'Corrección enviada a EDESA: requiere su atención. Para futuras consultas usá el NIS y DNI/CUIT corregidos: '
+                + tramite.nis + ' · ' + tramite.titular_dni_cuit + '.')
+            return redirect('/tramites/consultar/?vista=1')
+    return render(request, 'public/nuevo.html', {'form': form, 'es_subsanacion': True, 'observacion': observacion})

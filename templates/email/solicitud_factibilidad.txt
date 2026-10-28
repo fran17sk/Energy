@@ -1,3 +1,5 @@
+{% if subsanacion %}SUBSANACIÓN · REQUIERE ATENCIÓN DE EDESA. El interesado corrigió su solicitud. Titular: {{ secciones.1.campos.1.valor }} · DNI/CUIT: {{ secciones.1.campos.2.valor }}. Observación atendida: {{ subsanacion }}. Los adjuntos de este correo reemplazan sólo los documentos del mismo tipo; conservá los anteriores no reemplazados.{% endif %}
+
 SOLICITUD DE FACTIBILIDAD · GENERACIÓN DISTRIBUIDA
 
 Se recibió la siguiente solicitud para EDESA. La información y la documentación se remiten por correo; la aplicación conserva todos los datos del formulario, sin almacenar los adjuntos iniciales.

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Tramite, DocumentoTramite
+from .models import Tramite, DocumentoTramite, ObservacionSolicitud
 
 
 class SoloLecturaAdmin(admin.ModelAdmin):
@@ -25,3 +25,8 @@ class TramiteAdmin(SoloLecturaAdmin):
 class DocumentoAdmin(SoloLecturaAdmin):
     exclude = ('archivo',)
     list_display = ('tramite', 'tipo', 'usuario', 'creado_en')
+
+
+@admin.register(ObservacionSolicitud)
+class ObservacionSolicitudAdmin(SoloLecturaAdmin):
+    list_display = ('tramite', 'usuario', 'creada_en', 'subsanada_en', 'recibida_en')

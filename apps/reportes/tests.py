@@ -235,3 +235,15 @@ class ReportesTests(TestCase):
         self.assertEqual(reporte['sin_datos'], 1)
         self.assertEqual(reporte['recepcion']['muestras'], 0)
         self.assertEqual(reporte['pendientes_total'], 0)
+
+    def test_espera_de_correccion_no_se_imputa_a_edesa(self):
+        from types import SimpleNamespace
+        from .services import _espera_subsanacion
+        ahora = timezone.now()
+        eventos = [
+            SimpleNamespace(accion='SOLICITUD_OBSERVADA', creado_en=ahora - timedelta(hours=6)),
+            SimpleNamespace(accion='SOLICITUD_SUBSANADA', creado_en=ahora - timedelta(hours=4)),
+            SimpleNamespace(accion='SOLICITUD_OBSERVADA', creado_en=ahora - timedelta(hours=1)),
+        ]
+        self.assertEqual(_espera_subsanacion(eventos, ahora - timedelta(hours=8), ahora), 3 * 3600)
+        self.assertEqual(_espera_subsanacion(eventos, ahora - timedelta(minutes=30), ahora), 1800)

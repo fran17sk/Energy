@@ -58,6 +58,9 @@ def resumen_actuacion(tramite, codigo):
     resumen = dict(ACCION_RESUMEN[codigo])
     if codigo == 'recibir':
         etapa = tramite.etapa_actual.codigo
+        if tramite.estado_actual == Tramite.Estado.SUBSANADO:
+            resumen['resultado'] = 'Se registrará la recepción de los datos corregidos y se habilitará la revisión de factibilidad por EDESA.'
+            return resumen
         destino = RECEPCIONES.get(etapa)
         if etapa == 'presentacion-proyecto-ejecutivo':
             destino = 'previsado-proyecto-ejecutivo'
@@ -73,13 +76,17 @@ def requiere_recepcion(tramite):
     if not tramite.etapa_actual_id or tramite.estado_actual == 'FINALIZADO':
         return False
     codigo = tramite.etapa_actual.codigo
-    return (codigo in RECEPCIONES or
+    return (tramite.estado_actual == Tramite.Estado.SUBSANADO or codigo in RECEPCIONES or
             (codigo == 'presentacion-proyecto-ejecutivo' and tramite.estado_actual == 'PROYECTO_ENVIADO') or
             (codigo == 'firma-contrato' and tramite.estado_actual == 'PENDIENTE'))
 
 
 def acciones_disponibles(tramite):
     codigo = tramite.etapa_actual.codigo if tramite.etapa_actual_id else ''
+    if tramite.estado_actual == Tramite.Estado.OBSERVADO:
+        return []
+    if tramite.estado_actual == Tramite.Estado.SUBSANADO:
+        return [('recibir', 'Recibir subsanación de la solicitud')]
     if requiere_recepcion(tramite):
         return [('recibir', 'Confirmar recepción del trámite')]
     if tramite.estado_actual == Tramite.Estado.PENDIENTE_ENVIO:
@@ -96,7 +103,7 @@ def acciones_disponibles(tramite):
 
 
 def auditar(tramite, accion, user=None, **detalle):
-    cliente = accion in {'SOLICITUD_INICIADA', 'PROYECTO_ENVIADO'} and user is None
+    cliente = accion in {'SOLICITUD_INICIADA', 'PROYECTO_ENVIADO', 'SOLICITUD_SUBSANADA'} and user is None
     detalle.update(organismo_usuario=user.organismo.sigla if user and user.organismo_id else None,
                    usuario_nombre=user.get_username() if user else ((tramite.solicitante_nombre or tramite.titular_nombre or 'Solicitante') if cliente else 'Sistema'),
                    actor='CLIENTE' if cliente else ('INSTITUCIONAL' if user else 'SISTEMA'))
@@ -140,7 +147,13 @@ def recibir(pk, user):
     if not puede_actuar(user, tramite) or not tramite.etapa_actual_id:
         return tramite
     codigo = tramite.etapa_actual.codigo
-    if codigo in RECEPCIONES:
+    if codigo == 'respuesta-factibilidad' and tramite.estado_actual == Tramite.Estado.SUBSANADO:
+        tramite.observaciones_solicitud.filter(subsanada_en__isnull=False, recibida_en__isnull=True).update(recibida_en=timezone.now())
+        tramite.estado_actual = Tramite.Estado.PENDIENTE
+        tramite.save()
+        auditar(tramite, 'SUBSANACION_RECIBIDA', user, etapa=codigo)
+        historial(tramite, 'EN_PROCESO', user, 'Subsanación recibida por EDESA.')
+    elif codigo in RECEPCIONES:
         historial(tramite, 'RECIBIDO', user, 'Recibido por el organismo tras confirmar la recepción.')
         auditar(tramite, 'RECIBIDO', user, etapa=codigo, organismo=tramite.organismo_actual.sigla)
         mover(tramite, RECEPCIONES[codigo], user=user)

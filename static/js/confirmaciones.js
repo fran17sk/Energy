@@ -2,6 +2,8 @@
   const descriptions = document.getElementById('confirmaciones-data');
   const actions = descriptions ? JSON.parse(descriptions.textContent) : {};
   const fallback = {
+    observacion: {titulo: 'Observar solicitud de factibilidad', resultado: 'El solicitante recibirá por correo las correcciones solicitadas. La respuesta de factibilidad quedará bloqueada hasta que subsane y EDESA reciba la corrección.'},
+    subsanacion: {titulo: 'Enviar correcciones a EDESA', resultado: 'Se actualizarán los datos del trámite y se enviará a EDESA la presentación completa junto con los archivos que reemplaces. Los adjuntos no se guardan en el servidor. EDESA tendrá una tarea pendiente de recepción.'},
     solicitud_email: { titulo: 'Enviar solicitud de factibilidad a EDESA', resultado: 'Se enviarán todos los datos y adjuntos al correo designado por EDESA. Se guardarán todos los datos del formulario y se generará un código de seguimiento. Los adjuntos iniciales se enviarán por correo y no se guardarán en el servidor.' },
     alta: { titulo: 'Registrar solicitud de factibilidad', resultado: 'Se creará tu trámite en EDESA y se enviará el código de seguimiento al correo indicado. Guardá ese código para consultar el expediente.' },
     proyecto: { titulo: 'Enviar Proyecto Ejecutivo', resultado: 'Se incorporará el proyecto al expediente y EDESA tendrá una tarea pendiente de recepción y revisión.' },
@@ -11,7 +13,7 @@
     const container = document.createElement('div');
     container.className = 'wf-confirm-summary';
     const intro = document.createElement('p'); intro.textContent = info.resultado; container.append(intro);
-    if (form.dataset.confirmKind === 'solicitud_email') {
+    if (['solicitud_email', 'subsanacion'].includes(form.dataset.confirmKind)) {
       for (const section of form.querySelectorAll('[data-solicitud-section]')) {
         const title = document.createElement('h3'); title.className = 'wf-confirm-group-title';
         const legend = section.querySelector('legend').cloneNode(true);
@@ -44,7 +46,7 @@
     row('Correo para notificaciones', form.dataset.destinatario);
     row('Usuario responsable', form.dataset.usuario);
     row('Notificación', form.dataset.asunto);
-    for (const [name, label] of [['titular_nombre','Titular'], ['titular_email','Correo'], ['nis','NIS'], ['expediente','Expediente administrativo'], ['fecha','Fecha y hora (Salta)'], ['observacion','Detalle / indicaciones']]) {
+    for (const [name, label] of [['detalle', 'Observación al solicitante'], ['titular_nombre','Titular'], ['titular_email','Correo'], ['nis','NIS'], ['expediente','Expediente administrativo'], ['fecha','Fecha y hora (Salta)'], ['observacion','Detalle / indicaciones']]) {
       const input = form.elements.namedItem(name);
       let value = input?.value;
       if (name === 'fecha' && value) {
@@ -92,7 +94,7 @@
       }
       sending = true;
       form.querySelectorAll('button[type="submit"]').forEach(button => {
-        button.disabled = true; button.textContent = form.dataset.confirmKind === 'solicitud_email' ? 'Enviando…' : 'Registrando…';
+        button.disabled = true; button.textContent = ['solicitud_email', 'subsanacion'].includes(form.dataset.confirmKind) ? 'Enviando…' : 'Registrando…';
       });
       HTMLFormElement.prototype.submit.call(form);
     });

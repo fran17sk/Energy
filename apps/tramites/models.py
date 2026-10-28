@@ -67,6 +67,8 @@ class Tramite(models.Model):
     class Estado(models.TextChoices):
         PENDIENTE = 'PENDIENTE', 'Pendiente'
         RECIBIDO = 'RECIBIDO', 'Recibido'
+        OBSERVADO = 'OBSERVADO', 'Observado · pendiente de corrección del solicitante'
+        SUBSANADO = 'SUBSANADO', 'Subsanación enviada · requiere atención de EDESA'
         PENDIENTE_ENVIO = 'PENDIENTE_ENVIO', 'Pendiente de envío de correo'
         PENDIENTE_CLIENTE = 'PENDIENTE_CLIENTE', 'Pendiente de envío por parte del cliente'
         PROYECTO_ENVIADO = 'PROYECTO_ENVIADO', 'Proyecto enviado · requiere atención de EDESA'
@@ -150,3 +152,16 @@ class DocumentoTramite(models.Model):
     class Meta:
         ordering = ['creado_en']
         constraints = [models.UniqueConstraint(fields=['tramite', 'tipo'], name='documento_unico_por_tipo')]
+
+
+class ObservacionSolicitud(models.Model):
+    tramite = models.ForeignKey(Tramite, on_delete=models.CASCADE, related_name='observaciones_solicitud')
+    usuario = models.ForeignKey('accounts.Usuario', on_delete=models.PROTECT)
+    detalle = models.TextField(max_length=2000)
+    creada_en = models.DateTimeField(auto_now_add=True)
+    subsanada_en = models.DateTimeField(null=True, blank=True)
+    recibida_en = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-creada_en', '-pk']
+        constraints = [models.UniqueConstraint(fields=['tramite'], condition=models.Q(subsanada_en__isnull=True), name='una_observacion_solicitud_abierta')]

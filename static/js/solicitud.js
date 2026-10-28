@@ -6,8 +6,12 @@
     const container = input.closest('.alta-upload') || input.closest('.alta-field');
     container.hidden = !active;
     input.disabled = !active;
-    input.required = active;
+    input.required = active && !(form.hasAttribute('data-subsanacion') && input.type === 'file');
     const label = input.closest('.alta-field').querySelector('label');
+    if (form.hasAttribute('data-subsanacion') && input.type === 'file') {
+      label.querySelector('.alta-required')?.remove();
+      return;
+    }
     label.querySelector('.alta-optional')?.remove();
     if (!label.querySelector('.alta-required')) {
       const star = document.createElement('span'); star.className = 'alta-required'; star.textContent = '*'; star.setAttribute('aria-label', 'obligatorio'); label.append(star);
