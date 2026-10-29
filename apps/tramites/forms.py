@@ -33,6 +33,7 @@ class AccionTramiteForm(forms.Form):
     etapa = forms.CharField(widget=forms.HiddenInput)
     archivo = forms.FileField(required=False, label='Documento', validators=[validar_documento],
         widget=forms.ClearableFileInput(attrs={'accept': '.pdf,.jpg,.jpeg,.png'}))
+    recorrido = forms.ChoiceField(label='Recorrido definido por la factibilidad', required=False, choices=[('', 'Seleccioná el recorrido'), ('GGER', 'Sólo proyecto GGER · sin obra de nexo'), ('CON_NEXO', 'Proyecto GGER + proyecto de obra de nexo')])
     expediente = forms.CharField(max_length=100, required=False, label='Número de expediente administrativo')
     fecha = forms.DateTimeField(required=False, label='Fecha y hora',
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'step': '1'}))
@@ -49,6 +50,11 @@ class AccionTramiteForm(forms.Form):
             self.fields['accion'].initial = acciones[0][0]
         if not codigos.intersection({'respuesta', 'copaipa', 'dictamen', 'resolucion', 'contrato'}):
             self.fields.pop('archivo')
+        if 'respuesta' not in codigos:
+            self.fields.pop('recorrido')
+        else:
+            self.fields['recorrido'].required = True
+            self.fields['recorrido'].help_text = 'Los proyectos se presentan y tramitan por separado. La conexión del GGER queda bloqueada hasta finalizar el nexo.'
         if 'expediente' not in codigos:
             self.fields.pop('expediente')
         if not codigos.intersection({'programar', 'inspeccionar', 'conectar'}):

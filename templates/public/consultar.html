@@ -31,7 +31,8 @@
   {% endif %}
   {% if resultado %}
   <section class="consulta-card consulta-result" aria-labelledby="resultado-title">
-    <header class="consulta-result-heading"><div><span class="eyebrow">Resultado de tu consulta</span><h2 id="resultado-title">{{ resultado.numero }}</h2></div><span class="consulta-status">{{ resultado.get_estado_actual_display }}</span></header>
+    <header class="consulta-result-heading"><div><span class="eyebrow">Resultado de tu consulta · GGER</span><h2 id="resultado-title">{{ resultado.numero }}</h2></div><span class="consulta-status">{{ resultado.estado_display }}</span></header>
+    {% if resultado.requiere_nexo %}<nav class="consulta-circuit-links" aria-label="Circuitos del mismo trámite"><a href="#resultado-title">Proyecto GGER</a><a href="#nexo-title">Obra de nexo ↓</a></nav>{% endif %}
     <div class="consulta-summary">
       <div><span>Etapa actual</span><strong>{{ resultado.etapa_actual.nombre|default:'Pendiente de asignación' }}</strong></div>
       <div><span>Organismo responsable</span><strong>{{ resultado.organismo_actual.sigla|default:'Sin asignar' }}</strong></div>
@@ -51,9 +52,11 @@
       </ol>
     </div>
     {% else %}<p class="consulta-notice">El circuito de etapas todavía no fue configurado.</p>{% endif %}
+    {% if resultado.conexion_bloqueada %}<p class="consulta-notice">Requiere obra de nexo. Podés continuar el circuito GGER; su conexión quedará bloqueada hasta que finalice el nexo.</p>{% endif %}
     {% include 'public/includes/expediente_cliente.html' %}
     <footer class="consulta-result-footer"><span aria-hidden="true">ⓘ</span> El seguimiento se actualiza con cada actuación registrada por los organismos.</footer>
   </section>
+  {% include 'public/includes/nexo_cliente.html' %}
   {% else %}
   <div class="consulta-guidance"><span aria-hidden="true">◎</span><h2>La información que necesitás, en un solo lugar.</h2><p>Al consultar vas a ver la etapa actual, el organismo responsable y el recorrido de tu solicitud.</p></div>
   {% endif %}

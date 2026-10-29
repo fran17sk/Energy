@@ -6,3 +6,5 @@
 .rp-table-hint{display:none}@media(max-width:760px){.rp-table-hint{display:block;font-size:9px;color:var(--ui-muted);line-height:1.7;margin:0 0 12px}}
 
 .rp-table thead small{font-size:8px}.rp-data-note{font-size:11px;line-height:1.8;color:var(--ui-muted);padding:15px;background:var(--ui-soft);border:1px solid var(--ui-border);border-radius:9px;margin:18px 0 0}
+
+.rp-filters{grid-template-columns:repeat(4,minmax(0,1fr)) auto}@media(max-width:1250px){.rp-filters{grid-template-columns:1fr 1fr}.rp-filter-actions{grid-column:1/-1}}@media(max-width:760px){.rp-filters>div:nth-child(3){grid-column:auto}}@media(max-width:360px){.rp-filters{grid-template-columns:1fr}}

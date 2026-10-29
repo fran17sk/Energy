@@ -40,15 +40,16 @@
       details.append(dt, dd);
     };
     row('Trámite', form.dataset.tramite);
+    row('Circuito', form.dataset.circuito);
     row('Etapa actual', form.dataset.etapa);
     row('Estado actual', form.dataset.estado);
     row('Organismo', form.dataset.organismo);
     row('Correo para notificaciones', form.dataset.destinatario);
     row('Usuario responsable', form.dataset.usuario);
     row('Notificación', form.dataset.asunto);
-    for (const [name, label] of [['detalle', 'Observación al solicitante'], ['titular_nombre','Titular'], ['titular_email','Correo'], ['nis','NIS'], ['expediente','Expediente administrativo'], ['fecha','Fecha y hora (Salta)'], ['observacion','Detalle / indicaciones']]) {
+    for (const [name, label] of [['recorrido', 'Recorrido de la factibilidad'], ['detalle', 'Observación al solicitante'], ['titular_nombre','Titular'], ['titular_email','Correo'], ['nis','NIS'], ['expediente','Expediente administrativo'], ['fecha','Fecha y hora (Salta)'], ['observacion','Detalle / indicaciones']]) {
       const input = form.elements.namedItem(name);
-      let value = input?.value;
+      let value = input?.tagName === 'SELECT' ? input.selectedOptions[0]?.textContent : input?.value;
       if (name === 'fecha' && value) {
         const [date, time] = value.split('T');
         value = date.split('-').reverse().join('/') + ' · ' + time;

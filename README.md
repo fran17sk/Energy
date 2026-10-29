@@ -51,3 +51,5 @@ El menú **Reportes y estadísticas** permite analizar cantidades, tiempos de re
 ## Nueva solicitud de factibilidad
 
 El formulario se divide en propietario, titular del suministro, suministro, equipamiento GGER, solicitante y documentación. El envío completo y los adjuntos iniciales se remiten al correo configurado en `EDESA_SOLICITUD_EMAIL`. Se guardan todos los datos del formulario para gestionar el expediente. Los adjuntos iniciales se envían sólo por correo y no se almacenan en el servidor. Ver [configuración y política de almacenamiento](docs/solicitud-factibilidad.md).
+
+EDESA define en la respuesta de factibilidad si se requiere obra de nexo. GGER y nexo usan el mismo número de trámite, se presentan y avanzan por separado con los mismos organismos. La conexión del GGER exige la finalización del nexo. Ver [circuito y permisos](docs/circuito.md).

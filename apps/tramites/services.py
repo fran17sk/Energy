@@ -27,6 +27,31 @@ ACCIONES = {
 }
 
 
+def bloquear_tramite(pk):
+    # Orden único: expediente GGER y luego nexo, incluso al cerrar circuitos simultáneamente.
+    parent = Tramite.objects.values_list('tramite_gger_id', flat=True).get(pk=pk)
+    principal = Tramite.objects.select_for_update().get(pk=parent or pk)
+    return Tramite.objects.select_for_update().get(pk=pk) if parent else principal
+
+
+def habilitar_proyectos(tramite, user=None):
+    """Factibilidad común: ambos proyectos se habilitan después de aceptar su correo."""
+    mover(tramite, 'presentacion-proyecto-ejecutivo', Tramite.Estado.PENDIENTE_CLIENTE, user)
+    if tramite.requiere_nexo and not tramite.es_nexo:
+        if tramite.nexo_asociado:
+            return
+        # Copiar los datos declarados, sin archivos, estado, códigos ni documentos del GGER.
+        nombres = ['propietario_tipo', 'propietario_nombre', 'propietario_dni', 'propietario_cuit',
+            'titular_tipo', 'titular_nombre', 'titular_dni_cuit', 'titular_email', 'titular_telefono',
+            'solicitante_condicion', 'solicitante_nombre', 'solicitante_dni', 'solicitante_celular',
+            'nis', 'catastro', 'departamento', 'potencia_contratada_kw', 'tecnologia', 'tipo_conexion',
+            'modalidad_conexion', 'potencia_inyectada_kw', 'coordenadas_pilar', 'consulta_documento_hash']
+        nexo = Tramite.objects.create(tramite_gger=tramite, **{nombre: getattr(tramite, nombre) for nombre in nombres})
+        mover(nexo, 'presentacion-proyecto-ejecutivo', Tramite.Estado.PENDIENTE_CLIENTE, user)
+        auditar(nexo, 'CIRCUITO_NEXO_HABILITADO', user, tramite_gger=tramite.pk)
+        auditar(tramite, 'OBRA_NEXO_HABILITADA', user, nexo=nexo.pk)
+
+
 def institucional(user):
     return user.is_authenticated and user.is_active and (user.is_superuser or bool(user.organismo_id))
 
@@ -40,7 +65,7 @@ def puede_actuar(user, tramite):
 
 ACCION_RESUMEN = {
     'recibir': {'titulo': 'Confirmar recepción del trámite', 'resultado': 'Se registrará la recepción y se habilitará la siguiente actuación de tu organismo.'},
-    'respuesta': {'titulo': 'Enviar respuesta de factibilidad', 'resultado': 'Se adjuntará la respuesta y se enviará al correo del titular. Una vez aceptado el correo, se habilitará la presentación del Proyecto Ejecutivo.'},
+    'respuesta': {'titulo': 'Enviar respuesta de factibilidad', 'resultado': 'Se enviará la factibilidad al solicitante con el recorrido elegido. Si requiere nexo, se habilitarán dos proyectos independientes bajo el mismo número. La conexión GGER quedará bloqueada hasta finalizar la obra de nexo.'},
     'previsar': {'titulo': 'Previsar y remitir a COPAIPA', 'resultado': 'El proyecto quedará previsado por EDESA y pasará a COPAIPA para su recepción y visado.'},
     'copaipa': {'titulo': 'Visar y remitir a la Secretaría', 'resultado': 'Se adjuntará el dictamen, quedará visado por COPAIPA y se remitirá a la Secretaría de Minería y Energía.'},
     'expediente': {'titulo': 'Asociar expediente administrativo', 'resultado': 'El número quedará asociado al trámite y se habilitará la carga del dictamen de la Secretaría.'},
@@ -56,6 +81,12 @@ ACCION_RESUMEN = {
 
 def resumen_actuacion(tramite, codigo):
     resumen = dict(ACCION_RESUMEN[codigo])
+    if tramite.es_nexo:
+        resumen['titulo'] += ' · Obra de nexo'
+        resumen['resultado'] = 'Circuito independiente de obra de nexo. ' + resumen['resultado']
+        if codigo == 'conectar':
+            resumen['titulo'] = 'Finalizar obra de nexo'
+            resumen['resultado'] = 'Se registrará la finalización del nexo y se levantará el bloqueo de conexión del GGER asociado. La conexión del GGER deberá registrarse por separado.'
     if codigo == 'recibir':
         etapa = tramite.etapa_actual.codigo
         if tramite.estado_actual == Tramite.Estado.SUBSANADO:
@@ -83,6 +114,10 @@ def requiere_recepcion(tramite):
 
 def acciones_disponibles(tramite):
     codigo = tramite.etapa_actual.codigo if tramite.etapa_actual_id else ''
+    if codigo == 'conexion-red' and tramite.conexion_bloqueada:
+        return []
+    if tramite.es_nexo and codigo in {'ingreso-factibilidad', 'respuesta-factibilidad'}:
+        return []
     if tramite.estado_actual == Tramite.Estado.OBSERVADO:
         return []
     if tramite.estado_actual == Tramite.Estado.SUBSANADO:
@@ -104,7 +139,7 @@ def acciones_disponibles(tramite):
 
 def auditar(tramite, accion, user=None, **detalle):
     cliente = accion in {'SOLICITUD_INICIADA', 'PROYECTO_ENVIADO', 'SOLICITUD_SUBSANADA'} and user is None
-    detalle.update(organismo_usuario=user.organismo.sigla if user and user.organismo_id else None,
+    detalle.update(circuito=tramite.circuito_display, organismo_usuario=user.organismo.sigla if user and user.organismo_id else None,
                    usuario_nombre=user.get_username() if user else ((tramite.solicitante_nombre or tramite.titular_nombre or 'Solicitante') if cliente else 'Sistema'),
                    actor='CLIENTE' if cliente else ('INSTITUCIONAL' if user else 'SISTEMA'))
     Auditoria.objects.create(tramite=tramite, usuario=user, accion=accion, detalle=detalle)
@@ -143,7 +178,7 @@ def iniciar(tramite):
 
 @transaction.atomic
 def recibir(pk, user):
-    tramite = Tramite.objects.select_for_update().get(pk=pk)
+    tramite = bloquear_tramite(pk)
     if not puede_actuar(user, tramite) or not tramite.etapa_actual_id:
         return tramite
     codigo = tramite.etapa_actual.codigo
@@ -179,7 +214,7 @@ def guardar_documento(tramite, tipo, archivo, user=None):
 
 @transaction.atomic
 def presentar_proyecto(pk, archivo):
-    tramite = Tramite.objects.select_for_update().get(pk=pk)
+    tramite = bloquear_tramite(pk)
     if tramite.etapa_actual.codigo != 'presentacion-proyecto-ejecutivo' or tramite.estado_actual != Tramite.Estado.PENDIENTE_CLIENTE:
         raise ValidationError('El trámite no está esperando un proyecto ejecutivo o ya fue presentado.')
     guardar_documento(tramite, 'PROYECTO', archivo)
@@ -193,11 +228,13 @@ def presentar_proyecto(pk, archivo):
 @transaction.atomic
 def actuar(pk, user, data):
     from apps.notificaciones.services import encolar
-    tramite = Tramite.objects.select_for_update().get(pk=pk)
+    tramite = bloquear_tramite(pk)
     if not puede_actuar(user, tramite):
         raise PermissionDenied('No tenés permiso para actuar por este organismo.')
     codigo = tramite.etapa_actual.codigo
     accion = data['accion']
+    if accion == 'conectar' and tramite.conexion_bloqueada:
+        raise ValidationError('No se puede conectar el GGER hasta que EDESA registre la finalización de la obra de nexo.')
     if data['etapa'] != codigo or accion not in dict(acciones_disponibles(tramite)):
         raise ValidationError('El trámite cambió de estado. Actualizá la pantalla antes de continuar.')
     if accion == 'recibir':
@@ -211,8 +248,14 @@ def actuar(pk, user, data):
         raise ValidationError('Una actuación realizada no puede tener fecha futura.')
     if accion == 'conectar' and (not tramite.inspeccion_realizada or fecha < tramite.inspeccion_realizada):
         raise ValidationError('La conexión debe ser posterior a la inspección realizada.')
+    if accion == 'conectar' and tramite.requiere_nexo and fecha < tramite.nexo_asociado.conexion_realizada:
+        raise ValidationError('La fecha de conexión del GGER no puede ser anterior a la finalización de la obra de nexo.')
     if accion == 'inspeccionar' and fecha < tramite.creado_en:
         raise ValidationError('La inspección no puede ser anterior al inicio del trámite.')
+    if accion == 'respuesta':
+        if tramite.es_nexo or data.get('recorrido') not in {'GGER', 'CON_NEXO'}:
+            raise ValidationError('Elegí si el GGER requiere una obra de nexo antes de emitir la factibilidad.')
+        tramite.requiere_nexo = data['recorrido'] == 'CON_NEXO'
     docs = {'respuesta': 'RESPUESTA', 'copaipa': 'COPAIPA', 'dictamen': 'SECRETARIA', 'resolucion': 'RESOLUCION', 'contrato': 'CONTRATO'}
     documento = None
     if accion in docs:
@@ -221,13 +264,13 @@ def actuar(pk, user, data):
         documento = guardar_documento(tramite, docs[accion], data['archivo'], user)
     observacion = data.get('observacion', '')
     auditar(tramite, accion.upper(), user, etapa=codigo, observacion=observacion,
-            expediente=data.get('expediente', ''), fecha=fecha.isoformat() if fecha else None)
+            expediente=data.get('expediente', ''), recorrido=data.get('recorrido', ''), fecha=fecha.isoformat() if fecha else None)
     if accion == 'respuesta':
         tramite.estado_actual = Tramite.Estado.PENDIENTE_ENVIO
         tramite.save()
         encolar(tramite, 'RESPUESTA', 'Respuesta de factibilidad',
-                'EDESA emitió la respuesta de factibilidad adjunta. Podés consultarla en el sistema. '
-                'El siguiente paso es presentar tu Proyecto Ejecutivo desde la consulta de tu trámite.', documento, user=user)
+                'EDESA emitió la respuesta de factibilidad adjunta. Podés consultarla en el sistema. ' +
+                ('Debés presentar por separado el Proyecto Ejecutivo GGER y el proyecto de obra de nexo. Ambos circuitos avanzan independientemente; la conexión GGER requiere que el nexo esté finalizado.' if tramite.requiere_nexo else 'El siguiente paso es presentar tu Proyecto Ejecutivo GGER desde la consulta de tu trámite.'), documento, user=user)
     elif accion == 'expediente':
         if not data.get('expediente'):
             raise ValidationError('Ingresá el expediente administrativo.')
@@ -261,8 +304,8 @@ def actuar(pk, user, data):
             tramite.estado_actual = Tramite.Estado.FINALIZADO
             tramite.save()
             historial(tramite, 'FINALIZADO', user, 'Conexión registrada por EDESA. ' + observacion)
-            encolar(tramite, 'FINALIZACION', 'Tu conexión fue registrada',
-                    'EDESA registró la conexión a la red. Tu trámite está finalizado y disponible para todos los organismos intervinientes.', user=user)
+            encolar(tramite, 'FINALIZACION', 'Obra de nexo finalizada' if tramite.es_nexo else 'Tu conexión fue registrada',
+                    ('EDESA registró la finalización de la obra de nexo. El GGER asociado puede continuar hasta su conexión, que debe registrarse por separado.' if tramite.es_nexo else 'EDESA registró la conexión a la red. Tu trámite está finalizado y disponible para todos los organismos intervinientes.'), user=user)
         else:
             siguiente, detalle = finales[accion]
             if accion == 'inspeccionar':

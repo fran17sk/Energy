@@ -27,7 +27,7 @@ class SubsanacionForm(SolicitudFactibilidadForm):
 
 
 def puede_observar(user, tramite):
-    return (services.puede_actuar(user, tramite) and tramite.organismo_actual.sigla == 'EDESA'
+    return (not tramite.es_nexo and services.puede_actuar(user, tramite) and tramite.organismo_actual.sigla == 'EDESA'
         and tramite.etapa_actual.codigo == 'respuesta-factibilidad'
         and tramite.estado_actual == Tramite.Estado.PENDIENTE)
 

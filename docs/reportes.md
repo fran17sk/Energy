@@ -41,3 +41,5 @@ La descarga es institucional, no se almacena en caché y no incluye códigos de 
 Las nuevas presentaciones conservan sus datos y se identifican por el nombre del titular. Los registros históricos mínimos siguen incluidos en recuentos y tiempos, identificados mediante su NIS. Los adjuntos iniciales sólo se remiten por correo a EDESA.
 
 Las solicitudes observadas no se cuentan como respuestas pendientes del organismo mientras esperan al interesado. En factibilidad se descuentan los intervalos entre observación y subsanación del tiempo de respuesta y de la antigüedad de los pendientes, según la auditoría.
+
+El filtro **Circuito** separa GGER (predeterminado) y obra de nexo. El total GGER cuenta una vez cada expediente, aunque tenga nexo. Los indicadores del nexo usan sus propias fechas, estados e historial desde la habilitación del proyecto; la factibilidad común sólo pertenece al GGER. El CSV incluye el circuito seleccionado y usa los mismos filtros del panel.

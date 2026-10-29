@@ -25,7 +25,11 @@ def private_storage():
 
 
 class Tramite(models.Model):
-    numero = models.CharField(max_length=64, unique=True, editable=False)
+    numero = models.CharField(max_length=64, editable=False)
+    requiere_nexo = models.BooleanField(default=False)
+    tramite_gger = models.OneToOneField('self', null=True, blank=True, on_delete=models.PROTECT,
+        related_name='obra_nexo', editable=False)
+
     creado_en = models.DateTimeField(default=timezone.now, editable=False)
     actualizado_en = models.DateTimeField(auto_now=True)
     presentacion_por_correo = models.BooleanField(default=False)
@@ -86,11 +90,67 @@ class Tramite(models.Model):
 
     class Meta:
         ordering = ['-creado_en']
+        constraints = [
+            models.UniqueConstraint(fields=['numero'], condition=models.Q(tramite_gger__isnull=True),
+                name='numero_unico_expediente_gger'),
+            models.CheckConstraint(condition=~models.Q(pk=models.F('tramite_gger_id')),
+                name='nexo_no_es_su_propio_gger'),
+            models.CheckConstraint(condition=models.Q(tramite_gger__isnull=True) | models.Q(requiere_nexo=False),
+                name='nexo_no_requiere_otro_nexo'),
+        ]
         indexes = [
             models.Index(fields=['nis']),
             models.Index(fields=['titular_dni_cuit']),
             models.Index(fields=['organismo_actual', 'estado_actual']),
         ]
+
+    @property
+    def es_nexo(self):
+        return self.tramite_gger_id is not None
+
+    @property
+    def circuito_display(self):
+        return 'Obra de nexo' if self.es_nexo else 'GGER'
+
+    def nombre_etapa(self, etapa):
+        if not etapa:
+            return 'Sin etapa asignada'
+        nombres_nexo = {
+            'presentacion-proyecto-ejecutivo': 'Presentación del proyecto de obra de nexo',
+            'previsado-proyecto-ejecutivo': 'Previsado del proyecto de obra de nexo',
+            'firma-contrato': 'Contrato de obra de nexo · recepción final en EDESA',
+            'inspeccion': 'Inspección de obra de nexo',
+            'conexion-red': 'Finalización de la obra de nexo',
+        }
+        return nombres_nexo.get(etapa.codigo, etapa.nombre) if self.es_nexo else etapa.nombre
+
+    @property
+    def etapa_display(self):
+        return self.nombre_etapa(self.etapa_actual)
+
+    @property
+    def codigo_consulta(self):
+        return self.tramite_gger.numero if self.es_nexo else self.numero
+
+    @property
+    def nexo_asociado(self):
+        try:
+            return self.obra_nexo
+        except Tramite.DoesNotExist:
+            return None
+
+    @property
+    def conexion_bloqueada(self):
+        if self.es_nexo or not self.requiere_nexo:
+            return False
+        nexo = self.nexo_asociado
+        return not (nexo and nexo.estado_actual == self.Estado.FINALIZADO and nexo.conexion_realizada)
+
+    @property
+    def estado_display(self):
+        if self.es_nexo and self.estado_actual == self.Estado.FINALIZADO:
+            return 'Finalizado · obra de nexo registrada'
+        return self.get_estado_actual_display()
 
     @property
     def titular_display(self):
@@ -119,10 +179,12 @@ class Tramite(models.Model):
         return constant_time_compare(self.titular_dni_cuit, documento)
 
     def __str__(self):
-        return self.numero
+        return f'{self.numero} · Obra de nexo' if self.es_nexo else self.numero
 
     def save(self, *args, **kwargs):
-        if not self.numero:
+        if self.tramite_gger_id:
+            self.numero = self.tramite_gger.numero
+        elif not self.numero:
             self.numero = 'GGER-' + secrets.token_hex(24).upper()
         super().save(*args, **kwargs)
 

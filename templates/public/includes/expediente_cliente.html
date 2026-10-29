@@ -3,12 +3,12 @@
   {% if resultado.presentacion_por_correo %}<p>Los adjuntos iniciales fueron enviados al correo de EDESA y no se guardan en el servidor. Aquí se muestran el seguimiento y los documentos incorporados en las etapas posteriores.</p>{% endif %}
   {% if resultado.expediente_administrativo %}<p><strong>Expediente administrativo:</strong> {{ resultado.expediente_administrativo }}</p>{% endif %}
   {% if resultado.inspeccion_programada %}<p><strong>Inspección programada:</strong> {{ resultado.inspeccion_programada|date:'d/m/Y H:i' }}</p>{% endif %}
-  {% if resultado.conexion_realizada %}<p><strong>Conexión registrada:</strong> {{ resultado.conexion_realizada|date:'d/m/Y H:i' }} · Trámite finalizado</p>{% endif %}
-  <h3>Documentación del trámite</h3>
+  {% if resultado.conexion_realizada %}<p><strong>{% if resultado.es_nexo %}Finalización de obra de nexo:{% else %}Conexión registrada:{% endif %}</strong> {{ resultado.conexion_realizada|date:'d/m/Y H:i' }} · Circuito finalizado</p>{% endif %}
+  <h3>Documentación · {{ resultado.circuito_display }}</h3>
   <ul class="expediente-docs">{% for documento in resultado.documentos.all %}<li><a href="{% url 'tramite_documento' documento.pk %}">{{ documento.get_tipo_display }} <span aria-hidden="true">↓</span></a><small>{{ documento.creado_en|date:'d/m/Y H:i' }}</small></li>{% empty %}<li>No hay documentos disponibles.</li>{% endfor %}</ul>
-  {% if resultado.estado_actual == 'PENDIENTE_CLIENTE' %}
-  <section class="expediente-upload"><span class="eyebrow">Tu siguiente paso</span><h3>Presentá tu Proyecto Ejecutivo</h3><p>Adjuntá el proyecto para que EDESA lo reciba y revise. PDF, JPG o PNG, hasta 10 MB.</p>
-    <form data-confirm-form data-confirm-kind="proyecto" data-tramite="{{ resultado.numero }}" method="post" enctype="multipart/form-data" action="{% url 'tramite_proyecto' resultado.pk %}">{% csrf_token %}{{ proyecto_form.as_p }}<button class="btn primary" type="submit">Enviar proyecto a EDESA →</button></form>
+  {% if resultado.estado_actual == 'PENDIENTE_CLIENTE' and resultado.etapa_actual.codigo == 'presentacion-proyecto-ejecutivo' %}
+  <section class="expediente-upload"><span class="eyebrow">Tu siguiente paso</span><h3>{% if resultado.es_nexo %}Presentá el proyecto de obra de nexo{% else %}Presentá tu Proyecto Ejecutivo GGER{% endif %}</h3><p>Adjuntá el proyecto para que EDESA lo reciba y revise. PDF, JPG o PNG, hasta 10 MB.</p>
+    <form data-confirm-form data-confirm-kind="proyecto" data-circuito="{{ resultado.circuito_display }}" data-tramite="{{ resultado.numero }}" method="post" enctype="multipart/form-data" action="{% url 'tramite_proyecto' resultado.pk %}">{% csrf_token %}{{ proyecto_form.as_p }}<button class="btn primary" type="submit">Enviar proyecto {{ resultado.circuito_display }} a EDESA →</button></form>
   </section>
   {% elif resultado.estado_actual == 'PROYECTO_ENVIADO' %}<p class="consulta-notice">Tu proyecto fue enviado. EDESA debe recibirlo y revisarlo.</p>{% endif %}
   <h3>Actuaciones registradas</h3>

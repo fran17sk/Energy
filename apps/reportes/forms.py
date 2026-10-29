@@ -5,6 +5,7 @@ from apps.organismos.models import Organismo
 
 
 class FiltrosReportesForm(forms.Form):
+    circuito = forms.ChoiceField(label='Circuito', required=False, choices=[('GGER', 'GGER'), ('NEXO', 'Obra de nexo')], initial='GGER')
     desde = forms.DateField(label='Desde', widget=forms.DateInput(attrs={'type': 'date'}))
     hasta = forms.DateField(label='Hasta', widget=forms.DateInput(attrs={'type': 'date'}))
     organismo = forms.ModelChoiceField(label='Organismo', queryset=Organismo.objects.all(),
@@ -17,7 +18,7 @@ class FiltrosReportesForm(forms.Form):
     @classmethod
     def datos_iniciales(cls):
         hoy = timezone.localdate()
-        return {'desde': (hoy - timedelta(days=89)).isoformat(), 'hasta': hoy.isoformat()}
+        return {'circuito': 'GGER', 'desde': (hoy - timedelta(days=89)).isoformat(), 'hasta': hoy.isoformat()}
 
     def clean(self):
         data = super().clean()

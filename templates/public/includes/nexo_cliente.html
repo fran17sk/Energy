@@ -1,0 +1,10 @@
+{% if resultado.requiere_nexo %}
+<section class="consulta-card nexo-card" aria-labelledby="nexo-title">
+<header class="consulta-result-heading"><div><span class="eyebrow">Mismo trámite · circuito independiente</span><h2 id="nexo-title">Obra de nexo</h2></div><span class="consulta-status">{% if nexo %}{{ nexo.estado_display }}{% else %}Pendiente de envío de la factibilidad{% endif %}</span></header>
+<p>El GGER y la obra de nexo avanzan por separado bajo el número de trámite que consultaste. La conexión del GGER sólo se habilita cuando finaliza la obra de nexo.</p>
+{% if nexo %}
+<div class="consulta-summary"><div><span>Etapa del nexo</span><strong>{{ nexo.etapa_display }}</strong></div><div><span>Organismo responsable</span><strong>{{ nexo.organismo_actual.sigla }}</strong></div><div><span>Actualización del nexo</span><strong>{{ nexo.actualizado_en|date:'d/m/Y H:i' }}</strong></div></div>
+<details class="nexo-route"><summary>Ver recorrido de la obra de nexo</summary><ol class="nexo-stages">{% for paso in seguimiento_nexo %}<li class="{{ paso.estado }}" {% if paso.estado == 'current' %}aria-current="step"{% endif %}><strong>{{ paso.etapa.organismo.sigla }}</strong> · {{ paso.nombre|default:paso.etapa.nombre }} <small>{% if paso.estado == 'done' %}Completada{% elif paso.estado == 'current' %}Etapa actual{% else %}Pendiente{% endif %}</small></li>{% endfor %}</ol></details>
+{% include 'public/includes/expediente_cliente.html' with resultado=nexo proyecto_form=nexo_form %}
+{% else %}<p>La presentación del proyecto de nexo estará disponible cuando se complete el envío de la respuesta de factibilidad.</p>{% endif %}
+</section>{% endif %}

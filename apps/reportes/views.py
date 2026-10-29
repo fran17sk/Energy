@@ -12,7 +12,7 @@ from .services import construir_reporte
 
 def _filtros(request):
     datos = FiltrosReportesForm.datos_iniciales()
-    datos.update({key: value for key, value in request.GET.items() if key in {'desde', 'hasta', 'organismo'}})
+    datos.update({key: value for key, value in request.GET.items() if key in {'desde', 'hasta', 'organismo', 'circuito'}})
     return FiltrosReportesForm(datos)
 
 
@@ -26,7 +26,7 @@ def dashboard(request):
     if reporte:
         from urllib.parse import urlencode
         export_query = urlencode({'desde': form.cleaned_data['desde'].isoformat(),
-            'hasta': form.cleaned_data['hasta'].isoformat(),
+            'hasta': form.cleaned_data['hasta'].isoformat(), 'circuito': form.cleaned_data['circuito'] or 'GGER',
             'organismo': form.cleaned_data['organismo'].pk if form.cleaned_data['organismo'] else ''})
     return render(request, 'reportes/dashboard.html', {
         'filtros': form, 'reporte': reporte, 'export_query': export_query,
@@ -53,6 +53,7 @@ def exportar(request):
     buffer = io.StringIO(newline='')
     writer = csv.writer(buffer, delimiter=';')
     writer.writerow(['Reporte GGER', 'Trámites por fecha de inicio', str(reporte['desde']), str(reporte['hasta'])])
+    writer.writerow(['Circuito seleccionado', reporte['circuito_filtro']])
     writer.writerow(['Organismo seleccionado', _celda_segura(reporte['organismo_filtro'].sigla) if reporte['organismo_filtro'] else 'Todos'])
     writer.writerow(['Corte', timezone.localtime(reporte['corte']).isoformat(), 'Unidad de duración: días corridos'])
     writer.writerow(['Total trámites', reporte['total'], 'En curso', reporte['activos'], 'Finalizados', reporte['finalizados']])

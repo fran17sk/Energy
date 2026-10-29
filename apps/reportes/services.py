@@ -76,12 +76,12 @@ def _periodos(desde, hasta):
     return unidad, periodos
 
 
-def construir_reporte(desde, hasta, organismo=None, ahora=None):
+def construir_reporte(desde, hasta, organismo=None, ahora=None, circuito='GGER'):
     ahora = ahora or timezone.now()
     tz = timezone.get_current_timezone()
     inicio = timezone.make_aware(datetime.combine(desde, time.min), tz)
     fin = timezone.make_aware(datetime.combine(hasta + timedelta(days=1), time.min), tz)
-    qs = Tramite.objects.filter(creado_en__gte=inicio, creado_en__lt=fin)
+    qs = Tramite.objects.filter(creado_en__gte=inicio, creado_en__lt=fin, tramite_gger__isnull=circuito != 'NEXO')
     if organismo:
         qs = qs.filter(Q(organismo_actual=organismo) | Q(etapas_historial__etapa__organismo=organismo)).distinct()
     qs = qs.select_related('organismo_actual', 'etapa_actual').prefetch_related(
@@ -174,7 +174,7 @@ def construir_reporte(desde, hasta, organismo=None, ahora=None):
     distribucion = [{'estado': clave, 'nombre': etiquetas.get(clave, clave.replace('_', ' ').capitalize()),
                      'cantidad': cantidad, 'porcentaje': round(cantidad * 100 / total, 1)}
                     for clave, cantidad in estados.most_common()] if total else []
-    return {'total': total, 'finalizados': finalizados, 'activos': total - finalizados,
+    return {'circuito_filtro': 'Obra de nexo' if circuito == 'NEXO' else 'GGER', 'total': total, 'finalizados': finalizados, 'activos': total - finalizados,
             'ciclo': _resumen(ciclos), 'sin_fecha_cierre': sin_fecha_cierre,
             'organismos': filas, 'instancias': instancias, 'periodos': periodos, 'unidad': unidad,
             'estados': distribucion, 'ancho_grafico': max(320, len(periodos) * 38), 'pendientes': sorted(pendientes, key=lambda p: p['espera'], reverse=True)[:10],

@@ -59,6 +59,8 @@ class CircuitoTests(TestCase):
     def accion(self, sigla, accion, **extra):
         self.t.refresh_from_db()
         self.client.force_login(self.users[sigla])
+        if accion == 'respuesta':
+            extra.setdefault('recorrido', 'GGER')
         data = {'accion': accion, 'etapa': self.t.etapa_actual.codigo, **extra}
         with self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(reverse('institucional_tramite_detalle', args=[self.t.pk]), data)
@@ -134,7 +136,7 @@ class CircuitoTests(TestCase):
             self.assertContains(response, 'Conexión realizada')
             self.assertFalse(response.context['acciones'])
         response = self.consultar()
-        self.assertContains(response, 'Trámite finalizado')
+        self.assertContains(response, 'Circuito finalizado')
         self.assertContains(response, 'Contrato firmado')
         # Cada recepción institucional conserva usuario, organismo y fecha/hora.
         recepciones = self.t.auditorias.filter(accion__in=['RECIBIDO', 'PROYECTO_RECIBIDO'])
@@ -151,7 +153,7 @@ class CircuitoTests(TestCase):
         self.abrir('EDESA')
         self.client.force_login(self.users['COPAIPA'])
         response = self.client.post(reverse('institucional_tramite_detalle', args=[self.t.pk]), {
-            'accion': 'respuesta', 'etapa': 'respuesta-factibilidad', 'archivo': self.pdf()})
+            'accion': 'respuesta', 'etapa': 'respuesta-factibilidad', 'recorrido': 'GGER', 'archivo': self.pdf()})
         self.assertEqual(response.status_code, 403)
         self.t.refresh_from_db()
         self.assertEqual(self.t.estado_actual, 'PENDIENTE')
@@ -227,7 +229,7 @@ class CircuitoTests(TestCase):
 
     def test_formulario_viejo_no_puede_repetir_una_actuacion(self):
         self.abrir('EDESA')
-        data = {'accion': 'respuesta', 'etapa': 'respuesta-factibilidad', 'archivo': self.pdf()}
+        data = {'accion': 'respuesta', 'etapa': 'respuesta-factibilidad', 'recorrido': 'GGER', 'archivo': self.pdf()}
         with self.captureOnCommitCallbacks(execute=True):
             services.actuar(self.t.pk, self.users['EDESA'], data)
         with self.assertRaises(ValidationError):

@@ -27,9 +27,9 @@ def enviar(pk):
             notificacion.intentos += 1
             try:
                 email = EmailMessage(
-                    subject=f'GGER · {notificacion.asunto}',
+                    subject=f'{notificacion.tramite.circuito_display} · {notificacion.asunto}',
                     body=((f'Hola {notificacion.tramite.solicitante_nombre or notificacion.tramite.titular_nombre},' if (notificacion.tramite.solicitante_nombre or notificacion.tramite.titular_nombre) else 'Hola,') + f'\n\n{notificacion.mensaje}\n\n'
-                          f'Número de trámite: {notificacion.tramite.numero}\n'
+                          f'Circuito: {notificacion.tramite.circuito_display}\nNúmero de trámite para consulta: {notificacion.tramite.codigo_consulta}\n'
                           'Guardá este código en un lugar seguro y no lo compartas. '
                           'Para consultar ingresá al sitio GGER con este código, tu NIS y el DNI / CUIT del titular.\n'),
                     to=[notificacion.destinatario],
@@ -38,7 +38,7 @@ def enviar(pk):
                     documento = notificacion.documento
                     with documento.archivo.open('rb') as archivo:
                         extension = Path(documento.archivo.name).suffix
-                        email.attach(f'{documento.get_tipo_display()}{extension}', archivo.read())
+                        email.attach(f'{"Obra de nexo - " if notificacion.tramite.es_nexo else ""}{documento.get_tipo_display()}{extension}', archivo.read())
                 if email.send(fail_silently=False) != 1:
                     raise RuntimeError('El backend no aceptó el correo.')
             except Exception:
@@ -50,16 +50,15 @@ def enviar(pk):
             notificacion.estado = 'ENVIADA'
             notificacion.enviado_en = timezone.now()
             notificacion.save(update_fields=['estado', 'intentos', 'enviado_en'])
-            from apps.tramites.models import Tramite
-            from apps.tramites.services import historial, mover, auditar
-            tramite = Tramite.objects.select_for_update().get(pk=notificacion.tramite_id)
+            from apps.tramites.services import historial, auditar, bloquear_tramite, habilitar_proyectos
+            tramite = bloquear_tramite(notificacion.tramite_id)
             auditar(tramite, 'CORREO_ENVIADO', notificacion.usuario, evento=notificacion.evento,
                     notificacion=notificacion.pk)
             if (notificacion.evento == 'RESPUESTA' and tramite.etapa_actual.codigo == 'respuesta-factibilidad'
                     and tramite.estado_actual == 'PENDIENTE_ENVIO'):
                 historial(tramite, 'ENVIADA', notificacion.usuario, 'Respuesta de factibilidad enviada por correo al cliente.')
                 auditar(tramite, 'RESPUESTA_ENVIADA', notificacion.usuario)
-                mover(tramite, 'presentacion-proyecto-ejecutivo', 'PENDIENTE_CLIENTE', notificacion.usuario)
+                habilitar_proyectos(tramite, notificacion.usuario)
             elif (notificacion.evento == 'CONVOCATORIA' and tramite.etapa_actual.codigo == 'firma-contrato'
                     and tramite.estado_actual == 'PENDIENTE_ENVIO'):
                 tramite.estado_actual = 'CONVOCADO'

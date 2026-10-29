@@ -81,22 +81,30 @@ def solicitud_enviada(request):
 
 def acceso_cliente(request, pk):
     acceso = request.session.get('consulta_tramite', {})
-    return acceso.get('id') == pk and acceso.get('hasta', 0) > time.time()
+    if acceso.get('hasta', 0) <= time.time():
+        return False
+    return acceso.get('id') == pk or Tramite.objects.filter(pk=pk, tramite_gger_id=acceso.get('id'), tramite_gger__isnull=False).exists()
 
 
-def contexto_consulta(form, resultado=None, no_encontrado=False, proyecto_form=None):
+def contexto_consulta(form, resultado=None, no_encontrado=False, proyecto_form=None, nexo_form=None):
     seguimiento = []
     if resultado:
         completadas = set(resultado.etapas_historial.filter(
             estado__in=services.HISTORIAL_COMPLETO
         ).values_list('etapa_id', flat=True))
-        for etapa in Etapa.objects.filter(activa=True).select_related('organismo'):
+        etapas = Etapa.objects.filter(activa=True).select_related('organismo')
+        if resultado.es_nexo:
+            etapas = etapas.exclude(codigo__in=['ingreso-factibilidad', 'respuesta-factibilidad'])
+        for etapa in etapas:
             estado = 'done' if etapa.pk in completadas else 'pending'
             if etapa.pk == resultado.etapa_actual_id and resultado.estado_actual != 'FINALIZADO':
                 estado = 'current'
-            seguimiento.append({'etapa': etapa, 'estado': estado})
+            seguimiento.append({'etapa': etapa, 'estado': estado, 'nombre': resultado.nombre_etapa(etapa)})
+    nexo = resultado.nexo_asociado if resultado and not resultado.es_nexo else None
     return {'form': form, 'resultado': resultado, 'no_encontrado': no_encontrado,
-            'seguimiento': seguimiento, 'proyecto_form': proyecto_form or DocumentoForm()}
+            'seguimiento': seguimiento, 'proyecto_form': proyecto_form or DocumentoForm(),
+            'nexo': nexo, 'nexo_form': nexo_form or DocumentoForm(prefix='nexo'),
+            'seguimiento_nexo': contexto_consulta(ConsultaTramiteForm(), nexo)['seguimiento'] if nexo else []}
 
 
 @never_cache
@@ -119,7 +127,7 @@ def consultar(request):
         if form.is_valid():
             cd = form.cleaned_data
             resultado = Tramite.objects.filter(
-                numero__iexact=cd['numero'], nis=cd['nis'],
+                numero__iexact=cd['numero'], nis=cd['nis'], tramite_gger__isnull=True,
             ).select_related('etapa_actual', 'organismo_actual').first()
             if resultado and not resultado.verificar_documento_consulta(cd['dni_cuit']):
                 resultado = None
@@ -131,7 +139,7 @@ def consultar(request):
         form = ConsultaTramiteForm()
         acceso = request.session.get('consulta_tramite', {})
         if request.GET.get('vista') and acceso_cliente(request, acceso.get('id')):
-            resultado = Tramite.objects.select_related('etapa_actual', 'organismo_actual').filter(pk=acceso['id']).first()
+            resultado = Tramite.objects.select_related('etapa_actual', 'organismo_actual', 'tramite_gger', 'obra_nexo').filter(pk=acceso['id']).first()
     return render(request, 'public/consultar.html', contexto_consulta(form, resultado, no_encontrado))
 
 
@@ -140,17 +148,19 @@ def consultar(request):
 def proyecto_cliente(request, pk):
     if not acceso_cliente(request, pk):
         raise PermissionDenied('Volvé a consultar con el código, NIS y DNI / CUIT para presentar el proyecto.')
-    tramite = get_object_or_404(Tramite.objects.select_related('etapa_actual', 'organismo_actual'), pk=pk)
-    form = DocumentoForm(request.POST, request.FILES)
+    tramite = get_object_or_404(Tramite.objects.select_related('etapa_actual', 'organismo_actual', 'tramite_gger', 'obra_nexo'), pk=pk)
+    form = DocumentoForm(request.POST, request.FILES, prefix='nexo' if tramite.es_nexo else None)
     if form.is_valid():
         try:
             services.presentar_proyecto(pk, form.cleaned_data['archivo'])
         except ValidationError as exc:
             form.add_error(None, exc)
         else:
-            messages.success(request, 'Proyecto enviado correctamente. EDESA tiene una tarea pendiente de recepción y revisión.')
+            messages.success(request, f'Proyecto {tramite.circuito_display} enviado correctamente. EDESA tiene una tarea pendiente de recepción y revisión.')
             return redirect('/tramites/consultar/?vista=1')
-    return render(request, 'public/consultar.html', contexto_consulta(ConsultaTramiteForm(), tramite, proyecto_form=form))
+    principal = tramite.tramite_gger if tramite.es_nexo else tramite
+    return render(request, 'public/consultar.html', contexto_consulta(ConsultaTramiteForm(), principal,
+        proyecto_form=None if tramite.es_nexo else form, nexo_form=form if tramite.es_nexo else None))
 
 
 @never_cache
@@ -163,7 +173,7 @@ def documento(request, pk):
     except FileNotFoundError:
         return HttpResponse('El documento no está disponible. Contactá al organismo responsable.', status=404)
     extension = doc.archivo.name.rsplit('.', 1)[-1]
-    response = FileResponse(archivo, as_attachment=True, filename=f'{doc.get_tipo_display()}.{extension}')
+    response = FileResponse(archivo, as_attachment=True, filename=f'{doc.tramite.circuito_display} - {doc.get_tipo_display()}.{extension}')
     response['X-Content-Type-Options'] = 'nosniff'
     return response
 
@@ -177,12 +187,13 @@ def exigir_institucional(request):
 @never_cache
 def dashboard(request):
     exigir_institucional(request)
-    qs = Tramite.objects.select_related('etapa_actual', 'organismo_actual')
+    qs = Tramite.objects.select_related('etapa_actual', 'organismo_actual', 'tramite_gger', 'obra_nexo')
     tareas = qs.filter(organismo_actual_id=request.user.organismo_id).exclude(
         estado_actual__in=['FINALIZADO', 'PENDIENTE_CLIENTE', 'OBSERVADO'])
     return render(request, 'institutional/dashboard.html', {
-        'total': qs.count(), 'pendientes': tareas.count(),
-        'conectados': qs.filter(estado_actual='FINALIZADO').count(),
+        'total': qs.filter(tramite_gger__isnull=True).count(), 'pendientes': tareas.count(),
+        'total_nexos': qs.filter(tramite_gger__isnull=False).count(),
+        'conectados': qs.filter(estado_actual='FINALIZADO', tramite_gger__isnull=True).count(),
         'ultimos': qs[:5], 'tareas': tareas[:20],
     })
 
@@ -191,7 +202,7 @@ def dashboard(request):
 @never_cache
 def lista(request):
     exigir_institucional(request)
-    qs = Tramite.objects.select_related('etapa_actual', 'organismo_actual')
+    qs = Tramite.objects.select_related('etapa_actual', 'organismo_actual', 'tramite_gger', 'obra_nexo')
     q = request.GET.get('q', '').strip()
     if q:
         qs = qs.filter(Q(numero__icontains=q) | Q(nis__icontains=q) | Q(titular_nombre__icontains=q) | Q(titular_dni_cuit__icontains=q))
@@ -204,7 +215,7 @@ def lista(request):
 @never_cache
 def detalle(request, pk):
     exigir_institucional(request)
-    tramite = get_object_or_404(Tramite.objects.select_related('etapa_actual', 'organismo_actual'), pk=pk)
+    tramite = get_object_or_404(Tramite.objects.select_related('etapa_actual', 'organismo_actual', 'tramite_gger', 'obra_nexo'), pk=pk)
     if request.method == 'GET':
         services.auditar(tramite, 'CONSULTA_EXPEDIENTE', request.user,
                          etapa=tramite.etapa_actual.codigo if tramite.etapa_actual_id else '')
@@ -280,7 +291,7 @@ def corregir_solicitud(request, pk):
 
 @csrf_protect
 def _corregir_protegido(request, pk):
-    tramite = get_object_or_404(Tramite.objects.select_related('etapa_actual', 'organismo_actual'), pk=pk)
+    tramite = get_object_or_404(Tramite.objects.select_related('etapa_actual', 'organismo_actual', 'tramite_gger', 'obra_nexo'), pk=pk)
     observacion = tramite.observaciones_solicitud.filter(subsanada_en__isnull=True).first()
     if tramite.estado_actual != Tramite.Estado.OBSERVADO or not observacion:
         messages.info(request, 'El trámite no tiene una corrección pendiente.')
